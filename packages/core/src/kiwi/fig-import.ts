@@ -270,6 +270,14 @@ function remapComponentIds(graph: SceneGraph, guidToNodeId: Map<string, string>)
   }
 }
 
+function expandToHex(input: string): string {
+  return input
+    .replace(/[a-z]/gi, '0')
+    .split('')
+    .map((char) => '0' + char)
+    .join('')
+}
+
 export function importNodeChanges(
   nodeChanges: NodeChange[],
   blobs: Uint8Array[] = [],
@@ -279,7 +287,7 @@ export function importNodeChanges(
 
   if (images) {
     for (const [hash, data] of images) {
-      graph.images.set(hash, data)
+      graph.images.set(expandToHex(hash), data)
     }
   }
 
