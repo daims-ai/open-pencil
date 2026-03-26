@@ -11,7 +11,7 @@ import { useMenu } from '@/composables/use-menu'
 import { useCollab, COLLAB_KEY } from '@/composables/use-collab'
 import { connectAutomation } from '@/automation/server'
 import { spawnMCPIfNeeded } from '@/automation/spawn-mcp'
-import { IS_TAURI } from '@/constants'
+import { IS_FROM_DAIMS, IS_TAURI } from '@/constants'
 import { createDemoShapes } from '@/demo'
 import { useEditorStore } from '@/stores/editor'
 import { createTab, activeTab, getActiveStore } from '@/stores/tabs'
@@ -58,7 +58,7 @@ const automationCleanup = ref<(() => void) | null>(null)
 const mcpCleanup = ref<(() => void) | null>(null)
 
 onMounted(async () => {
-  if (import.meta.env.DEV || IS_TAURI) {
+  if (import.meta.env.DEV || IS_TAURI || IS_FROM_DAIMS) {
     automationCleanup.value = connectAutomation(getActiveStore).disconnect
   }
   try {
