@@ -9,6 +9,7 @@ import { computed, ref, watch } from 'vue'
 
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
 import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
+import { useElectronBridge, type OpenPencilConfig } from '@/bridge/electron-bridge'
 import { useEditorStore } from '@/stores/editor'
 import {
   ACP_AGENTS,
@@ -16,6 +17,7 @@ import {
   DEFAULT_AI_MODEL,
   DEFAULT_AI_PROVIDER,
   IS_BROWSER,
+  IS_FROM_DAIMS,
   IS_TAURI,
   setPexelsApiKey,
   setUnsplashAccessKey
@@ -112,6 +114,32 @@ watch(customModelID, markTransportDirty)
 watch(customAPIType, markTransportDirty)
 watch(apiKey, markTransportDirty)
 watch(customBaseURL, markTransportDirty)
+
+function applyExternalConfig(config: OpenPencilConfig) {
+  providerID.value = config.providerID as AIProviderID
+  apiKey.value = config.apiKey
+
+  markTransportDirty()
+}
+
+let electronBridgeInitialized = false
+
+async function initElectronConfig() {
+  if (!IS_FROM_DAIMS || electronBridgeInitialized) return
+  electronBridgeInitialized = true
+
+  const { waitForExternalConfig } = useElectronBridge()
+
+  try {
+    const config = await waitForExternalConfig()
+    applyExternalConfig(config)
+    activeTab.value = 'ai'
+    setAPIKey(config.apiKey)
+  } catch (e) {
+    console.error('[use-chat] Failed to get external config:', e)
+  }
+}
+
 
 function setAPIKey(key: string) {
   apiKey.value = key
@@ -278,6 +306,10 @@ if (IS_BROWSER) {
 }
 
 export function useAIChat() {
+  if (IS_FROM_DAIMS) {
+    void initElectronConfig()
+  }
+
   return {
     providerID,
     providerDef,
