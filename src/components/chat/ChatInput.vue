@@ -91,6 +91,7 @@ function handleSubmit(e: Event) {
           @paste.stop
           @copy.stop
           @cut.stop
+          @keydown.stop
         />
         <Tip v-if="isStreaming" :label="dialogs.stopGenerating">
           <button

@@ -53,7 +53,10 @@ const TRACK_SIZING_OPTIONS: { value: GridTrackSizing; label: string }[] = [
 export function useLayout() {
   const editor = useEditor()
 
-  const node = useSceneComputed<SceneNode | null>(() => editor.getSelectedNode() ?? null)
+  const node = useSceneComputed<SceneNode | null>(() => {
+    void editor.state.sceneVersion
+    return editor.getSelectedNode() ?? null
+  })
 
   const isInAutoLayout = computed(() => {
     const n = node.value
@@ -204,7 +207,9 @@ export function useLayout() {
     if (!node.value) return
     editor.updateNodeWithUndo(
       node.value.id,
-      { [prop]: node.value[prop].filter((_: GridTrack, i: number) => i !== index) },
+      {
+        [prop]: node.value[prop].filter((_: GridTrack, i: number) => i !== index)
+      },
       'Remove grid track'
     )
   }

@@ -15,8 +15,14 @@ import type { SceneNode } from '@open-pencil/core'
 export function usePosition() {
   const editor = useEditor()
 
-  const nodes = useSceneComputed(() => editor.getSelectedNodes())
-  const node = useSceneComputed<SceneNode | null>(() => editor.getSelectedNode() ?? null)
+  const nodes = useSceneComputed(() => {
+    void editor.state.sceneVersion
+    return editor.getSelectedNodes()
+  })
+  const node = useSceneComputed<SceneNode | null>(() => {
+    void editor.state.sceneVersion
+    return editor.getSelectedNode() ?? null
+  })
   const active = computed(() => nodes.value.length > 0)
   const isMulti = computed(() => nodes.value.length > 1)
   const ids = computed(() => nodes.value.map((n) => n.id))

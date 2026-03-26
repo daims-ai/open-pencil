@@ -21,8 +21,14 @@ type ArrayItem = Fill | Stroke | Effect | Record<string, unknown>
  */
 export function useNodeProps() {
   const store = useEditor()
-  const node = useSceneComputed(() => store.getSelectedNode() ?? null)
-  const nodes = useSceneComputed(() => store.getSelectedNodes())
+  const node = useSceneComputed(() => {
+    void store.state.sceneVersion
+    return store.getSelectedNode() ?? null
+  })
+  const nodes = useSceneComputed(() => {
+    void store.state.sceneVersion
+    return store.getSelectedNodes()
+  })
   const isMulti = computed(() => nodes.value.length > 1)
   const active = computed(() => node.value || isMulti.value)
   const activeNode = computed(() => node.value ?? (nodes.value[0] as SceneNode | undefined) ?? null)
@@ -137,7 +143,9 @@ export function useNodeProps() {
     for (const n of targetNodes()) {
       store.updateNodeWithUndo(
         n.id,
-        { [key]: (n[key] as unknown[]).filter((_, i) => i !== index) } as Partial<SceneNode>,
+        {
+          [key]: (n[key] as unknown[]).filter((_, i) => i !== index)
+        } as Partial<SceneNode>,
         label
       )
     }
