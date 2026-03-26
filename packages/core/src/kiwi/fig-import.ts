@@ -287,7 +287,7 @@ export function importNodeChanges(
 
   let isCorruptedHash = false
   for (const n of nodeChanges) {
-    if (n.fillPaints && n.fillPaints.length) {
+    if (n.fillPaints?.length) {
       for (const p of n.fillPaints) {
         if (p.type === 'IMAGE' && p.image) {
           if (p.image.hash && p.image.hash.length !== 20) {
