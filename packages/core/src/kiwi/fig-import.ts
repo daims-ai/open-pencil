@@ -285,9 +285,22 @@ export function importNodeChanges(
 ): SceneGraph {
   const graph = new SceneGraph()
 
+  let isCorruptedHash = false
+  for (const n of nodeChanges) {
+    if (n.fillPaints && n.fillPaints.length) {
+      for (const p of n.fillPaints) {
+        if (p.type === 'IMAGE' && p.image) {
+          if (p.image.hash && p.image.hash.length !== 20) {
+            isCorruptedHash = true
+          }
+        }
+      }
+    }
+  }
+
   if (images) {
     for (const [hash, data] of images) {
-      graph.images.set(expandToHex(hash), data)
+      graph.images.set(isCorruptedHash ? expandToHex(hash) : hash, data)
     }
   }
 
