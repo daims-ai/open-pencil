@@ -61,7 +61,6 @@ import {
   getJsx,
   diffJsx
 } from './read'
-import { stockPhoto } from './stock-photo'
 import { applyPhotoFromUrlTool } from './url-photo'
 import {
   deleteNode,
@@ -112,6 +111,7 @@ import {
   exportSvg,
   exportImage
 } from './vector'
+import { searchPrompts, getPrompt, searchAndApplyPrompt } from './prompt-search'
 
 import type { ToolDef } from './schema'
 
@@ -148,7 +148,10 @@ export const CORE_TOOLS: ToolDef[] = [
   describe,
   calc,
   evalCode,
-  viewportZoomToFit
+  viewportZoomToFit,
+  // DAIMS
+  searchPrompts,
+  getPrompt
 ]
 
 /**
@@ -245,4 +248,10 @@ export const EXTENDED_TOOLS: ToolDef[] = [
 ]
 
 /** All tools combined — used by MCP server and CLI. */
-export const ALL_TOOLS: ToolDef[] = [...CORE_TOOLS, ...EXTENDED_TOOLS]
+export const ALL_TOOLS: ToolDef[] = [
+  ...CORE_TOOLS,
+  ...EXTENDED_TOOLS,
+  searchPrompts,
+  getPrompt,
+  searchAndApplyPrompt
+]
