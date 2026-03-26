@@ -32,7 +32,10 @@ export interface UseTypographyOptions {
 export function useTypography(options: UseTypographyOptions = {}) {
   const editor = useEditor()
 
-  const node = useSceneComputed<SceneNode | null>(() => editor.getSelectedNode() ?? null)
+  const node = useSceneComputed<SceneNode | null>(() => {
+    void editor.state.sceneVersion
+    return editor.getSelectedNode() ?? null
+  })
 
   const { missingFonts, hasMissingFonts } = useNodeFontStatus(() => node.value)
 

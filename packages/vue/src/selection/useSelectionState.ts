@@ -16,11 +16,20 @@ export function useSelectionState() {
 
   const selectedIds = useSceneComputed(() => editor.state.selectedIds)
 
-  const hasSelection = computed(() => selectedIds.value.size > 0)
+  const hasSelection = computed(() => {
+    void editor.state.sceneVersion
+    return selectedIds.value.size > 0
+  })
 
-  const selectedNode = useSceneComputed<SceneNode | null>(() => editor.getSelectedNode() ?? null)
+  const selectedNode = useSceneComputed<SceneNode | null>(() => {
+    void editor.state.sceneVersion
+    return editor.getSelectedNode() ?? null
+  })
 
-  const selectedCount = computed(() => selectedIds.value.size)
+  const selectedCount = computed(() => {
+    void editor.state.sceneVersion
+    return selectedIds.value.size
+  })
 
   const selectedNodeType = computed(() => selectedNode.value?.type ?? null)
 
