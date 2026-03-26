@@ -62,6 +62,7 @@ import {
   diffJsx
 } from './read'
 import { stockPhoto } from './stock-photo'
+import { applyPhotoFromUrlTool } from './url-photo'
 import {
   deleteNode,
   cloneNode,
@@ -141,7 +142,8 @@ export const CORE_TOOLS: ToolDef[] = [
   nodeResize,
   batchUpdate,
   // Stock photos
-  stockPhoto,
+  // stockPhoto,
+  applyPhotoFromUrlTool,
   // Inspect & utility
   describe,
   calc,
