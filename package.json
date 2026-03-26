@@ -58,6 +58,7 @@
     "lib0": "^0.2.117",
     "motion-v": "^2.0.0",
     "prismjs": "^1.30.0",
+    "prompt-searcher": "^0.1.2",
     "reka-ui": "^2.9.0",
     "tailwind-merge": "^3.5.0",
     "tailwind-variants": "^3.2.2",
