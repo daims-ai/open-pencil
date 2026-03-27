@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { ScrubInputRoot, ScrubInputField, ScrubInputDisplay } from '@open-pencil/vue'
 
-const { modelValue, min, max, step, icon, label, suffix, sensitivity, placeholder } = defineProps<{
+const {
+  modelValue,
+  min,
+  max,
+  step,
+  icon,
+  label,
+  suffix,
+  sensitivity,
+  placeholder,
+  class: className,
+  dataTestId
+} = defineProps<{
   modelValue: number | symbol
   min?: number
   max?: number
@@ -11,6 +23,8 @@ const { modelValue, min, max, step, icon, label, suffix, sensitivity, placeholde
   suffix?: string
   sensitivity?: number
   placeholder?: string
+  class?: string
+  dataTestId?: string
 }>()
 
 const emit = defineEmits<{
@@ -32,8 +46,11 @@ const emit = defineEmits<{
     @commit="(val: number, prev: number) => emit('commit', val, prev)"
   >
     <div
-      data-test-id="scrub-input"
-      class="flex h-[26px] min-w-0 flex-1 items-center rounded border border-border bg-input focus-within:border-accent"
+      :data-test-id="dataTestId || 'scrub-input'"
+      :class="[
+        'flex h-[26px] min-w-0 flex-1 items-center rounded border border-border bg-input focus-within:border-accent',
+        className
+      ]"
       :style="{ cursor: editing ? 'auto' : 'ew-resize' }"
       @pointerdown="!editing && startScrub($event)"
     >
