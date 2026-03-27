@@ -33,7 +33,7 @@ function onLayerRightClick(e: MouseEvent) {
   >
     <ContextMenuRoot :modal="false">
       <ContextMenuTrigger as-child @contextmenu="onLayerRightClick">
-        <div class="relative scrollbar-thin flex-1 overflow-y-auto px-1">
+        <div data-test-id="layers-tree" class="relative scrollbar-thin flex-1 overflow-y-auto px-1">
           <TreeRoot
             :key="treeKey"
             v-slot="{ flattenItems }"
