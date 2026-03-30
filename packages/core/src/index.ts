@@ -25,6 +25,7 @@ export type {
 export {
   SceneGraph,
   generateId,
+  cloneVectorNetwork,
   type SceneNode,
   type NodeType,
   type Fill,
@@ -49,9 +50,11 @@ export {
   type GridPosition,
   type ConstraintType,
   type TextAutoResize,
+  type TextDirection,
   type TextAlignVertical,
   type TextCase,
   type TextDecoration,
+  type LayoutDirection,
   type ArcData,
   type VectorNetwork,
   type VectorVertex,
@@ -67,7 +70,8 @@ export {
   type VariableCollectionMode,
   type CharacterStyleOverride,
   type StyleRun,
-  type SceneGraphEvents
+  type SceneGraphEvents,
+  type DocumentColorSpace
 } from './scene-graph'
 
 export { FigmaAPI, FigmaNodeProxy, computeImageHash, type FigmaFontName } from './figma-api'
@@ -94,6 +98,21 @@ export type {
 export { executeRpcCommand, ALL_RPC_COMMANDS } from './rpc'
 export { queryByXPath, matchByXPath } from './xpath'
 export type { XPathQueryOptions } from './xpath'
+export {
+  okhclToRGBA,
+  rgbaToOkHCL,
+  serializeOkHCLPayload,
+  parseOkHCLPayload,
+  setNodeFillOkHCL,
+  setNodeStrokeOkHCL,
+  clearNodeFillOkHCL,
+  clearNodeStrokeOkHCL,
+  getNodeOkHCLPayloads,
+  getFillOkHCL,
+  getStrokeOkHCL,
+  type OkHCLColor,
+  type OkHCLPayload
+} from './okhcl'
 export type {
   InfoResult,
   PageItem,
@@ -132,7 +151,15 @@ export {
 export type { FrameCapture, NodeProfile } from './profiler'
 export { computeLayout, computeAllLayouts, setTextMeasurer } from './layout'
 export type { TextMeasurer } from './layout'
-export { getCanvasKit, getGpuBackend, type CanvasKitOptions, type GpuBackend } from './canvaskit'
+export { getCanvasKit, type CanvasKitOptions } from './canvaskit'
+export {
+  detectTextDirection,
+  resolveTextDirection,
+  resolveNodeTextDirection,
+  resolveNodeLayoutDirection,
+  isLogicalTextAlignStart,
+  isLogicalTextAlignEnd
+} from './direction'
 export {
   FONT_WEIGHT_NAMES,
   collectFontKeys,
@@ -145,9 +172,12 @@ export {
   markFontLoaded,
   ensureNodeFont,
   ensureCJKFallback,
+  ensureArabicFallback,
   getCJKFallbackFamily,
   getCJKFallbackFamilies,
+  getArabicFallbackFamilies,
   setCJKFallbackFamily,
+  setArabicFallbackFamily,
   styleToWeight,
   weightToStyle,
   normalizeFontFamily,
@@ -169,12 +199,47 @@ export {
   colorDistance
 } from './color'
 export {
+  resolveOkHCLForPreview,
+  resolveRGBAForPreview,
+  resolveNodeFillColor,
+  resolveNodeStrokeColor,
+  colorToDisplayCss,
+  getDefaultRenderColorSpace,
+  type RenderColorSpace,
+  type ColorIntentSpace,
+  type ColorPreviewOptions,
+  type ResolvedRenderColor
+} from './color-management'
+export {
   vectorNetworkToPath,
   geometryBlobToPath,
   decodeVectorNetworkBlob,
   encodeVectorNetworkBlob,
+  buildStyleOverrideTable,
   computeVectorBounds
 } from './vector'
+export {
+  evalCubic,
+  splitCubicAt,
+  segmentToAbsolute,
+  isLineSegment,
+  cubicExtrema,
+  computeAccurateBounds,
+  nearestPointOnCubic,
+  nearestPointOnNetwork,
+  splitSegmentAt,
+  removeVertex,
+  breakAtVertex,
+  deleteVertex,
+  mirrorHandle,
+  findOppositeHandle,
+  findAllHandles,
+  findConnectedComponents,
+  extractSubNetwork,
+  type CubicPoints,
+  type NearestResult,
+  type NetworkNearestResult
+} from './bezier-math'
 export { computeSelectionBounds, computeSnap, type SnapGuide } from './snap'
 export { UndoManager, type UndoEntry } from './undo'
 export { TextEditor, type TextCaret, type TextEditorState } from './text-editor'
@@ -193,17 +258,20 @@ export {
   renderNodesToImage,
   renderThumbnail,
   computeContentBounds,
+  initCanvasKit,
+  headlessRenderNodes,
+  headlessRenderThumbnail,
+  type RasterExportFormat,
   type ExportFormat
-} from './render-image'
-export { initCanvasKit, headlessRenderNodes, headlessRenderThumbnail } from './headless-render'
+} from './io/formats/raster'
 export {
   renderNodesToSVG,
   geometryBlobToSVGPath,
   vectorNetworkToSVGPaths,
   type SVGExportOptions
-} from './svg-export'
-export { svg, renderSVGNode, type SVGNode } from './svg-node'
-export { parseSVGPath } from './svg-path-parse'
+} from './io/formats/svg/export'
+export { svg, renderSVGNode, type SVGNode } from './io/formats/svg/node'
+export { parseSVGPath } from './io/formats/svg/parse-path'
 export {
   fetchIcon,
   fetchIcons,
@@ -214,7 +282,7 @@ export {
   type IconPath,
   type IconSearchResult
 } from './iconify'
-export { exportFigFile, compressFigData, compressFigDataSync } from './fig-export'
+export { exportFigFile, compressFigData, compressFigDataSync } from './io/formats/fig/export'
 export {
   FIG_KIWI_DEFAULT_VERSION,
   buildFigKiwi,
@@ -224,7 +292,7 @@ export {
   sceneNodeToKiwi,
   fractionalPosition,
   mapToFigmaType
-} from './kiwi/kiwi-serialize'
+} from './kiwi/serialize'
 
 export {
   createElement,
@@ -272,6 +340,8 @@ export {
   type OpenPencilClipboardData
 } from './clipboard'
 
+export { readPenFile, parsePenFile } from './io/formats/pen'
+
 export {
   readFigFile,
   parseFigFile,
@@ -316,6 +386,9 @@ export {
   parseVarint,
   FIG_WIRE_MAGIC
 } from './kiwi'
+
+export * from './io'
+export * from './lint'
 
 export { CODEGEN_PROMPT } from './tools/prompts/codegen-prompt'
 export {

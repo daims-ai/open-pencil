@@ -1,8 +1,8 @@
 import { inflateSync, deflateSync } from 'fflate'
 
 import { initCodec, getCompiledSchema, getSchemaBytes } from './kiwi/codec'
+import { nodeChangeToProps, sortChildren } from './kiwi/convert'
 import { populateAndApplyOverrides } from './kiwi/instance-overrides'
-import { nodeChangeToProps, sortChildren } from './kiwi/kiwi-convert'
 import { decodeBinarySchema, compileSchema, ByteBuffer } from './kiwi/kiwi-schema'
 import {
   sceneNodeToKiwi,
@@ -11,7 +11,7 @@ import {
   decompressFigKiwiDataAsync,
   makeDocumentNodeChange,
   makeCanvasNodeChange
-} from './kiwi/kiwi-serialize'
+} from './kiwi/serialize'
 import { randomInt } from './random'
 
 import type { NodeChange as KiwiNodeChange } from './kiwi/codec'
@@ -294,7 +294,7 @@ export function buildFigmaClipboardHTML(nodes: SceneNode[], graph: SceneGraph): 
   const localIdCounter = { value: 100 }
 
   const nodeChanges: KiwiNodeChange[] = [
-    makeDocumentNodeChange(docGuid),
+    makeDocumentNodeChange(docGuid, graph.documentColorSpace),
     makeCanvasNodeChange(canvasGuid, docGuid, '!', 'Page 1')
   ]
 

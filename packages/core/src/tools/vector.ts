@@ -1,6 +1,8 @@
+import { cloneVectorNetwork } from '../scene-graph'
 import { defineTool, nodeSummary } from './schema'
 
 import type { FigmaAPI } from '../figma-api'
+import type { RasterExportFormat } from '../io/formats/raster'
 import type { SceneNode, VectorNetwork } from '../scene-graph'
 
 function getVectorNode(
@@ -10,7 +12,7 @@ function getVectorNode(
   const node = figma.graph.getNode(id)
   if (!node) return { error: `Node "${id}" not found` }
   if (!node.vectorNetwork) return { error: `Node "${id}" has no vector data` }
-  return { node, vn: structuredClone(node.vectorNetwork) }
+  return { node, vn: cloneVectorNetwork(node.vectorNetwork) }
 }
 
 const CHUNK_SIZE = 0x8000
@@ -264,7 +266,7 @@ export const exportSvg = defineTool({
     }
   },
   execute: async (figma, args) => {
-    const { renderNodesToSVG } = await import('../svg-export/index.js')
+    const { renderNodesToSVG } = await import('../io/formats/svg/index.js')
     const pageId = figma.currentPageId
     const ids =
       args.ids && args.ids.length > 0 ? args.ids : figma.currentPage.children.map((n) => n.id)
@@ -303,7 +305,7 @@ export const exportImage = defineTool({
     }
     const ids =
       args.ids && args.ids.length > 0 ? args.ids : figma.currentPage.children.map((n) => n.id)
-    const format = (args.format ?? 'PNG').toUpperCase() as 'PNG' | 'JPG' | 'WEBP'
+    const format = (args.format ?? 'PNG').toUpperCase() as RasterExportFormat
     const data = await figma.exportImage(ids, {
       scale: args.scale ?? 1,
       format

@@ -28,8 +28,8 @@ export const RULER_MAJOR_TICK = 0.5
 export const RULER_MINOR_TICK = 0.25
 export const RULER_HIGHLIGHT_ALPHA = 0.3
 
-export const PEN_HANDLE_RADIUS = 3
-export const PEN_VERTEX_RADIUS = 4
+export const PEN_HANDLE_RADIUS = 2.5
+export const PEN_VERTEX_RADIUS = 3
 export const PEN_CLOSE_RADIUS_BOOST = 2
 export const PEN_PATH_STROKE_WIDTH = 2
 export const PARENT_OUTLINE_ALPHA = 0.5
@@ -198,9 +198,10 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     id: 'zai',
     name: 'Z.ai',
     keyPlaceholder: 'API key',
-    keyURL: 'https://docs.z.ai/api-reference/introduction',
-    defaultModel: 'glm-5',
+    keyURL: 'https://docs.z.ai/devpack/quick-start',
+    defaultModel: 'glm-5.1',
     models: [
+      { id: 'glm-5.1', name: 'GLM-5.1', tag: 'Best' },
       { id: 'glm-5', name: 'GLM-5' },
       { id: 'glm-5-code', name: 'GLM-5-Code' },
       { id: 'glm-4.7', name: 'GLM-4.7' },
@@ -220,9 +221,11 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     name: 'MiniMax',
     keyPlaceholder: 'API key',
     keyURL: 'https://platform.minimax.io/user-center/basic-information/interface-key',
-    defaultModel: 'MiniMax-M2.5',
+    defaultModel: 'MiniMax-M2.7',
     models: [
-      { id: 'MiniMax-M2.5', name: 'MiniMax-M2.5', tag: 'Best' },
+      { id: 'MiniMax-M2.7', name: 'MiniMax-M2.7', tag: 'Best' },
+      { id: 'MiniMax-M2.7-highspeed', name: 'MiniMax-M2.7-highspeed', tag: 'Fast' },
+      { id: 'MiniMax-M2.5', name: 'MiniMax-M2.5' },
       { id: 'MiniMax-M2.5-highspeed', name: 'MiniMax-M2.5 Highspeed', tag: 'Fast' },
       { id: 'MiniMax-M2.1', name: 'MiniMax-M2.1' },
       { id: 'MiniMax-M2.1-highspeed', name: 'MiniMax-M2.1 Highspeed', tag: 'Fast' },

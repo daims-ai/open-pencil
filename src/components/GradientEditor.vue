@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import AppSelect from './ui/AppSelect.vue'
 import Tip from './ui/Tip.vue'
-import HsvColorArea from './HsvColorArea.vue'
+import ColorPickerPanel from './ColorPickerPanel.vue'
 import ScrubInput from './ScrubInput.vue'
 import { colorToCSS } from '@open-pencil/core'
-import { GradientEditorRoot, GradientEditorBar, GradientEditorStop, useI18n } from '@open-pencil/vue'
+import {
+  GradientEditorRoot,
+  GradientEditorBar,
+  GradientEditorStop,
+  useI18n
+} from '@open-pencil/vue'
 
 import type { Fill } from '@open-pencil/core'
 
@@ -123,7 +128,7 @@ const { panels } = useI18n()
         </GradientEditorStop>
       </div>
 
-      <HsvColorArea :color="root.activeColor" @update="root.updateActiveColor" />
+      <ColorPickerPanel :color="root.activeColor" @update="root.updateActiveColor" />
     </div>
   </GradientEditorRoot>
 </template>

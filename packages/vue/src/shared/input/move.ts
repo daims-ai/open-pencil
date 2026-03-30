@@ -6,6 +6,8 @@ import type { DragMove, DragState } from './types'
 import type { SceneNode } from '@open-pencil/core'
 import type { Editor } from '@open-pencil/core/editor'
 
+const AUTO_LAYOUT_REORDER_CLICK_SLOP = 3
+
 export function detectAutoLayoutParent(editor: Editor): string | undefined {
   if (editor.state.selectedIds.size !== 1) return undefined
   const selectedId = [...editor.state.selectedIds][0]
@@ -28,22 +30,14 @@ export function duplicateAndDrag(
   for (const id of editor.state.selectedIds) {
     const src = editor.graph.getNode(id)
     if (!src) continue
-    const newId = editor.createShape(src.type, src.x, src.y, src.width, src.height)
-    editor.graph.updateNode(newId, {
-      name: src.name + ' copy',
-      fills: [...src.fills],
-      strokes: [...src.strokes],
-      effects: [...src.effects],
-      cornerRadius: src.cornerRadius,
-      opacity: src.opacity,
-      rotation: src.rotation
-    })
-    newIds.push(newId)
-    const newNode = editor.graph.getNode(newId)
-    newOriginals.set(newId, {
+    const parentId = src.parentId ?? editor.state.currentPageId
+    const clone = editor.graph.cloneTree(id, parentId, { name: src.name + ' copy' })
+    if (!clone) continue
+    newIds.push(clone.id)
+    newOriginals.set(clone.id, {
       x: src.x,
       y: src.y,
-      parentId: newNode?.parentId ?? editor.state.currentPageId
+      parentId
     })
   }
   editor.select(newIds)
@@ -54,6 +48,8 @@ export function duplicateAndDrag(
       type: 'move',
       startX: cx,
       startY: cy,
+      currentX: cx,
+      currentY: cy,
       originals: newOriginals,
       duplicated: true
     }
@@ -128,6 +124,9 @@ function applyMoveSnap(
 }
 
 export function handleMoveMove(d: DragMove, cx: number, cy: number, editor: Editor) {
+  d.currentX = cx
+  d.currentY = cy
+
   let dx = cx - d.startX
   let dy = cy - d.startY
 
@@ -170,6 +169,10 @@ export function handleMoveMove(d: DragMove, cx: number, cy: number, editor: Edit
   editor.setDropTarget(dropTarget?.id ?? null)
 }
 
+function getMoveDistance(d: DragMove) {
+  return Math.hypot(d.currentX - d.startX, d.currentY - d.startY)
+}
+
 function reparentOutsideNodes(editor: Editor) {
   for (const id of editor.state.selectedIds) {
     const node = editor.graph.getNode(id)
@@ -191,6 +194,10 @@ export function handleMoveUp(d: DragMove, editor: Editor) {
   editor.setSnapGuides([])
 
   if (indicator) {
+    if (getMoveDistance(d) < AUTO_LAYOUT_REORDER_CLICK_SLOP) {
+      editor.setDropTarget(null)
+      return
+    }
     for (const id of editor.state.selectedIds) {
       editor.reorderInAutoLayout(id, indicator.parentId, indicator.index)
     }

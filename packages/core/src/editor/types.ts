@@ -41,15 +41,15 @@ export const EDITOR_TOOLS: EditorToolDef[] = [
 ]
 
 export const TOOL_SHORTCUTS: Partial<Record<string, Tool>> = {
-  v: 'SELECT',
-  f: 'FRAME',
-  s: 'SECTION',
-  r: 'RECTANGLE',
-  o: 'ELLIPSE',
-  l: 'LINE',
-  t: 'TEXT',
-  p: 'PEN',
-  h: 'HAND'
+  KeyV: 'SELECT',
+  KeyF: 'FRAME',
+  KeyS: 'SECTION',
+  KeyR: 'RECTANGLE',
+  KeyO: 'ELLIPSE',
+  KeyL: 'LINE',
+  KeyT: 'TEXT',
+  KeyP: 'PEN',
+  KeyH: 'HAND'
 }
 
 export interface EditorState {
@@ -74,6 +74,8 @@ export interface EditorState {
     vertices: VectorVertex[]
     segments: VectorSegment[]
     dragTangent: Vector | null
+    oppositeDragTangent: Vector | null
+    pendingClose?: boolean
     closingToFirst: boolean
   } | null
   penCursorX: number | null

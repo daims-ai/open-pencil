@@ -52,9 +52,10 @@ export { useTypography } from './controls/useTypography'
 export type { UseTypographyOptions } from './controls/useTypography'
 export { useExport } from './controls/useExport'
 export { useFillControls } from './controls/useFillControls'
-export { useFillVariableBinding } from './controls/useFillVariableBinding'
+export { useColorVariableBinding } from './controls/useColorVariableBinding'
 export { useEffectsControls } from './controls/useEffectsControls'
 export { useStrokeControls } from './controls/useStrokeControls'
+export { useOkHCL } from './controls/useOkHCL'
 
 /** Variables, page navigation, and picker helpers. */
 export { useVariables } from './VariablesEditor/useVariables'
@@ -69,7 +70,25 @@ export { useFontPicker } from './FontPicker/useFontPicker'
 /** Headless structural primitives and their local contexts. */
 export { CanvasRoot, CanvasSurface, useCanvasContext } from './Canvas'
 export type { CanvasContext } from './Canvas'
-export { ColorInputRoot, ColorPickerRoot } from './ColorPicker'
+export {
+  ColorInputRoot,
+  ColorPickerRoot,
+  createColorPickerModel,
+  createOkHCLSliderGradientModel,
+  createOkHCLSliderPreviewModel,
+  createSliderGradientModel,
+  createSliderPreviewModel,
+  fromPercent,
+  rekaToAppColor,
+  toPercent,
+  updateAlpha,
+  updateHSBChannel,
+  updateHSLChannel,
+  updateHue,
+  updateRGBChannel,
+  applySolidFillColor,
+  applySolidStrokeColor
+} from './ColorPicker'
 export { FillPickerRoot } from './FillPicker'
 export { FontPickerRoot } from './FontPicker'
 export { GradientEditorRoot, GradientEditorBar, GradientEditorStop } from './GradientEditor'

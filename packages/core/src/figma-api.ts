@@ -9,6 +9,7 @@ import {
 } from './figma-api-proxy'
 import { computeBounds } from './geometry'
 
+import type { RasterExportFormat } from './io/formats/raster'
 import type {
   SceneGraph,
   NodeType,
@@ -218,7 +219,10 @@ export class FigmaAPI implements NodeProxyHost {
       paddingTop: raw.paddingTop,
       paddingRight: raw.paddingRight,
       paddingBottom: raw.paddingBottom,
-      paddingLeft: raw.paddingLeft
+      paddingLeft: raw.paddingLeft,
+      pluginData: structuredClone(raw.pluginData),
+      sharedPluginData: structuredClone(raw.sharedPluginData),
+      pluginRelaunchData: structuredClone(raw.pluginRelaunchData)
     })
     for (const childId of raw.childIds) {
       this.graph.cloneTree(childId, comp.id)
@@ -385,6 +389,6 @@ export class FigmaAPI implements NodeProxyHost {
 
   exportImage?: (
     nodeIds: string[],
-    options: { scale?: number; format?: 'PNG' | 'JPG' | 'WEBP'; quality?: number }
+    options: { scale?: number; format?: RasterExportFormat; quality?: number }
   ) => Promise<Uint8Array | null>
 }

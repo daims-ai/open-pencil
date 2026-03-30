@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { twMerge } from 'tailwind-merge'
 
-import { FillPickerRoot, useI18n } from '@open-pencil/vue'
+import { applySolidFillColor, FillPickerRoot, useI18n } from '@open-pencil/vue'
 
 import GradientEditor from './GradientEditor.vue'
-import HsvColorArea from './HsvColorArea.vue'
+import ColorPickerPanel from './ColorPickerPanel.vue'
 import ImageFillPicker from './ImageFillPicker.vue'
 import Tip from './ui/Tip.vue'
 import { usePopoverUI } from './ui/popover'
 
 import type { Fill } from '@open-pencil/core'
+import type { OkHCLControls } from '@open-pencil/vue/ColorPicker/types'
 
 const TAB_BASE =
   'flex size-6 cursor-pointer items-center justify-center rounded border-none p-0 transition-colors'
@@ -21,7 +22,7 @@ function tabClass(active: boolean) {
   )
 }
 
-const { fill } = defineProps<{ fill: Fill }>()
+const { fill, okhcl = null } = defineProps<{ fill: Fill; okhcl?: OkHCLControls | null }>()
 const emit = defineEmits<{ update: [fill: Fill] }>()
 const cls = usePopoverUI({ content: 'w-60 p-2' })
 const { panels } = useI18n()
@@ -34,6 +35,13 @@ const { panels } = useI18n()
     swatch-class="size-5 shrink-0 cursor-pointer rounded border border-border p-0"
     @update="emit('update', $event)"
   >
+    <template #trigger="{ style }">
+      <button
+        data-test-id="fill-picker-swatch"
+        class="size-5 shrink-0 cursor-pointer rounded border border-border p-0"
+        :style="style"
+      />
+    </template>
     <template #default="{ fill: currentFill, category, toSolid, toGradient, toImage, update }">
       <div class="mb-2 flex items-center gap-0.5">
         <Tip :label="panels.solid">
@@ -65,10 +73,11 @@ const { panels } = useI18n()
         </Tip>
       </div>
 
-      <HsvColorArea
+      <ColorPickerPanel
         v-if="category === 'SOLID'"
         :color="currentFill.color"
-        @update="update({ ...currentFill, color: $event })"
+        :okhcl="okhcl"
+        @update="update(applySolidFillColor(currentFill, $event))"
       />
 
       <GradientEditor v-if="category === 'GRADIENT'" :fill="currentFill" @update="update($event)" />

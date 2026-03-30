@@ -28,6 +28,8 @@ export interface SceneGraphEvents {
   'node:reordered': (nodeId: string, parentId: string, index: number) => void
 }
 
+export type DocumentColorSpace = 'srgb' | 'display-p3'
+
 export type HandleMirroring = 'NONE' | 'ANGLE' | 'ANGLE_AND_LENGTH'
 export type WindingRule = 'NONZERO' | 'EVENODD'
 
@@ -56,6 +58,22 @@ export interface VectorNetwork {
   vertices: VectorVertex[]
   segments: VectorSegment[]
   regions: VectorRegion[]
+}
+
+/** Deep-copy a VectorNetwork, stripping any Vue Proxy wrappers. */
+export function cloneVectorNetwork(vn: VectorNetwork): VectorNetwork {
+  return {
+    vertices: vn.vertices.map((v) => ({ ...v })),
+    segments: vn.segments.map((s) => ({
+      ...s,
+      tangentStart: { ...s.tangentStart },
+      tangentEnd: { ...s.tangentEnd }
+    })),
+    regions: vn.regions.map((r) => ({
+      windingRule: r.windingRule,
+      loops: r.loops.map((l) => [...l])
+    }))
+  }
 }
 
 export interface GeometryPath {
@@ -159,6 +177,8 @@ export type TextAutoResize = 'NONE' | 'HEIGHT' | 'WIDTH_AND_HEIGHT' | 'TRUNCATE'
 export type TextAlignVertical = 'TOP' | 'CENTER' | 'BOTTOM'
 export type TextCase = 'ORIGINAL' | 'UPPER' | 'LOWER' | 'TITLE'
 export type TextDecoration = 'NONE' | 'UNDERLINE' | 'STRIKETHROUGH'
+export type TextDirection = 'AUTO' | 'LTR' | 'RTL'
+export type LayoutDirection = 'AUTO' | 'LTR' | 'RTL'
 
 export interface CharacterStyleOverride {
   fontWeight?: number
@@ -204,6 +224,25 @@ export type LayoutCounterAlign = 'MIN' | 'CENTER' | 'MAX' | 'STRETCH' | 'BASELIN
 export type LayoutAlignSelf = 'AUTO' | 'MIN' | 'CENTER' | 'MAX' | 'STRETCH' | 'BASELINE'
 export type LayoutWrap = 'NO_WRAP' | 'WRAP'
 
+export interface PluginDataEntry {
+  pluginId: string
+  key: string
+  value: string
+}
+
+export interface SharedPluginDataEntry {
+  namespace: string
+  key: string
+  value: string
+}
+
+export interface PluginRelaunchDataEntry {
+  pluginId: string
+  command: string
+  message: string
+  isDeleted: boolean
+}
+
 export interface SceneNode {
   id: string
   type: NodeType
@@ -242,6 +281,7 @@ export interface SceneNode {
   fontWeight: number
   italic: boolean
   textAlignHorizontal: 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFIED'
+  textDirection: TextDirection
   textAlignVertical: TextAlignVertical
   textAutoResize: TextAutoResize
   textCase: TextCase
@@ -255,6 +295,7 @@ export interface SceneNode {
   verticalConstraint: ConstraintType
 
   layoutMode: LayoutMode
+  layoutDirection: LayoutDirection
   layoutWrap: LayoutWrap
   primaryAxisAlign: LayoutAlign
   counterAxisAlign: LayoutCounterAlign
@@ -318,6 +359,10 @@ export interface SceneNode {
   overrides: Record<string, unknown>
 
   boundVariables: Record<string, string>
+
+  pluginData: PluginDataEntry[]
+  sharedPluginData: SharedPluginDataEntry[]
+  pluginRelaunchData: PluginRelaunchDataEntry[]
 
   internalOnly: boolean
 
@@ -394,9 +439,11 @@ function createDefaultNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     fontWeight: 400,
     italic: false,
     textAlignHorizontal: 'LEFT',
+    textDirection: 'AUTO',
     lineHeight: null,
     letterSpacing: 0,
     layoutMode: 'NONE',
+    layoutDirection: 'AUTO',
     layoutWrap: 'NO_WRAP',
     primaryAxisAlign: 'MIN',
     counterAxisAlign: 'MIN',
@@ -455,6 +502,9 @@ function createDefaultNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     componentId: null,
     overrides: {},
     boundVariables: {},
+    pluginData: [],
+    sharedPluginData: [],
+    pluginRelaunchData: [],
     internalOnly: false,
     flipX: false,
     flipY: false,
@@ -481,6 +531,7 @@ export class SceneGraph {
   activeMode = new Map<string, string>()
   rootId: string
   figKiwiVersion: number | null = null
+  documentColorSpace: DocumentColorSpace = 'display-p3'
   readonly emitter: Emitter<SceneGraphEvents> = createNanoEvents()
   private absPosCache = new Map<string, Vector>()
   instanceIndex = new Map<string, Set<string>>()
@@ -756,6 +807,7 @@ export class SceneGraph {
     'fontWeight',
     'italic',
     'textAlignHorizontal',
+    'textDirection',
     'textAlignVertical',
     'lineHeight',
     'letterSpacing',

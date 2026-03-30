@@ -1,12 +1,12 @@
 import { SceneGraph } from '../scene-graph'
-import { populateAndApplyOverrides } from './instance-overrides'
 import {
   guidToString,
   nodeChangeToProps,
   sortChildren,
   setVariableColorResolver,
   VARIABLE_BINDING_FIELDS_INVERSE
-} from './kiwi-convert'
+} from './convert'
+import { populateAndApplyOverrides } from './instance-overrides'
 
 import type { VariableType, VariableValue } from '../scene-graph'
 import type { NodeChange, VariableDataValuesEntry, Color, GUID } from './codec'
@@ -278,12 +278,18 @@ function expandToHex(input: string): string {
     .join('')
 }
 
+function parseDocumentColorSpace(nodeChanges: NodeChange[]): 'srgb' | 'display-p3' {
+  const documentNode = nodeChanges.find((nc) => nc.type === 'DOCUMENT')
+  return documentNode?.documentColorProfile === 'DISPLAY_P3' ? 'display-p3' : 'srgb'
+}
+
 export function importNodeChanges(
   nodeChanges: NodeChange[],
   blobs: Uint8Array[] = [],
   images?: Map<string, Uint8Array>
 ): SceneGraph {
   const graph = new SceneGraph()
+  graph.documentColorSpace = parseDocumentColorSpace(nodeChanges)
 
   let isCorruptedHash = false
   for (const n of nodeChanges) {

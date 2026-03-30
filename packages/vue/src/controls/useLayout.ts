@@ -2,14 +2,14 @@ import { computed, ref } from 'vue'
 
 import { useEditor } from '@open-pencil/vue/context/editorContext'
 import { useSceneComputed } from '@open-pencil/vue/internal/useSceneComputed'
+import { useI18n } from '@open-pencil/vue/i18n'
 
 import type {
   SceneNode,
   LayoutSizing,
   LayoutAlign,
   LayoutCounterAlign,
-  GridTrack,
-  GridTrackSizing
+  GridTrack
 } from '@open-pencil/core'
 
 type AlignCell = { primary: LayoutAlign; counter: LayoutCounterAlign }
@@ -38,11 +38,13 @@ const ALIGN_VERTICAL: AlignCell[] = [
   { primary: 'MAX', counter: 'MAX' }
 ]
 
-const TRACK_SIZING_OPTIONS: { value: GridTrackSizing; label: string }[] = [
-  { value: 'FR', label: 'Fill (fr)' },
-  { value: 'FIXED', label: 'Fixed (px)' },
-  { value: 'AUTO', label: 'Auto' }
-]
+function createTrackSizingOptions(panels: ReturnType<typeof useI18n>['panels']['value']) {
+  return [
+    { value: 'FR' as const, label: panels.sizingFillFr },
+    { value: 'FIXED' as const, label: panels.sizingFixedPx },
+    { value: 'AUTO' as const, label: panels.auto }
+  ]
+}
 
 /**
  * Returns layout-related state and actions for the current selection.
@@ -52,11 +54,16 @@ const TRACK_SIZING_OPTIONS: { value: GridTrackSizing; label: string }[] = [
  */
 export function useLayout() {
   const editor = useEditor()
+  const { panels } = useI18n()
 
   const node = useSceneComputed<SceneNode | null>(() => {
     void editor.state.sceneVersion
     return editor.getSelectedNode() ?? null
   })
+
+  const layoutDirection = computed<SceneNode['layoutDirection']>(
+    () => node.value?.layoutDirection ?? 'AUTO'
+  )
 
   const isInAutoLayout = computed(() => {
     const n = node.value
@@ -88,16 +95,22 @@ export function useLayout() {
   })
 
   const widthSizingOptions = computed(() => {
-    const options: { value: LayoutSizing; label: string }[] = [{ value: 'FIXED', label: 'Fixed' }]
-    if (isFlex.value) options.push({ value: 'HUG', label: 'Hug' })
-    if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill' })
+    const options: { value: LayoutSizing; label: string }[] = [
+      { value: 'FIXED', label: panels.value.sizingFixed }
+    ]
+    if (isFlex.value) options.push({ value: 'HUG', label: panels.value.sizingHug })
+    if (isInAutoLayout.value || isFlex.value)
+      options.push({ value: 'FILL', label: panels.value.sizingFill })
     return options
   })
 
   const heightSizingOptions = computed(() => {
-    const options: { value: LayoutSizing; label: string }[] = [{ value: 'FIXED', label: 'Fixed' }]
-    if (isFlex.value) options.push({ value: 'HUG', label: 'Hug' })
-    if (isInAutoLayout.value || isFlex.value) options.push({ value: 'FILL', label: 'Fill' })
+    const options: { value: LayoutSizing; label: string }[] = [
+      { value: 'FIXED', label: panels.value.sizingFixed }
+    ]
+    if (isFlex.value) options.push({ value: 'HUG', label: panels.value.sizingHug })
+    if (isInAutoLayout.value || isFlex.value)
+      options.push({ value: 'FILL', label: panels.value.sizingFill })
     return options
   })
 
@@ -183,6 +196,15 @@ export function useLayout() {
     )
   }
 
+  function setLayoutDirection(direction: SceneNode['layoutDirection']) {
+    if (!node.value) return
+    editor.updateNodeWithUndo(
+      node.value.id,
+      { layoutDirection: direction },
+      'Change layout direction'
+    )
+  }
+
   function updateGridTrack(
     prop: 'gridTemplateColumns' | 'gridTemplateRows',
     index: number,
@@ -227,6 +249,7 @@ export function useLayout() {
   return {
     editor,
     node,
+    layoutDirection,
     isInAutoLayout,
     isGrid,
     isFlex,
@@ -237,7 +260,7 @@ export function useLayout() {
     alignGrid,
     showIndividualPadding,
     hasUniformPadding,
-    trackSizingOptions: TRACK_SIZING_OPTIONS,
+    trackSizingOptions: createTrackSizingOptions(panels.value),
     updateProp,
     commitProp,
     setWidthSizing,
@@ -245,6 +268,7 @@ export function useLayout() {
     setUniformPadding,
     commitUniformPadding,
     setAlignment,
+    setLayoutDirection,
     updateGridTrack,
     addTrack,
     removeTrack,

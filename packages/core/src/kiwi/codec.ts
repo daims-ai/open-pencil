@@ -243,6 +243,19 @@ export interface VariableDataValuesEntry {
   variableData: VariableDataEntry
 }
 
+export interface PluginData {
+  pluginID: string
+  value: string
+  key: string
+}
+
+export interface PluginRelaunchData {
+  pluginID: string
+  message: string
+  command: string
+  isDeleted: boolean
+}
+
 export interface NodeChange {
   [key: string]: unknown
   guid?: GUID
@@ -346,6 +359,9 @@ export interface NodeChange {
   variableResolvedType?: string
   variableDataValues?: { entries?: VariableDataValuesEntry[] }
   variableScopes?: string[]
+  documentColorProfile?: 'SRGB' | 'DISPLAY_P3'
+  pluginData?: PluginData[]
+  pluginRelaunchData?: PluginRelaunchData[]
 }
 
 export interface FigmaMessage {

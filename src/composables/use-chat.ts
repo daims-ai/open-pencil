@@ -175,11 +175,11 @@ function createModel(): LanguageModel {
       return google(effectiveModelID)
     }
     case 'zai': {
-      const zai = createOpenAI({
+      const zai = createAnthropic({
         apiKey: key,
-        baseURL: 'https://api.z.ai/api/paas/v4'
+        baseURL: 'https://api.z.ai/api/anthropic'
       })
-      return zai.chat(effectiveModelID)
+      return zai(effectiveModelID)
     }
     case 'minimax': {
       const minimax = createOpenAI({
