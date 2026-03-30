@@ -1,22 +1,22 @@
 {
   "name": "@open-pencil/vue",
-  "version": "0.10.0",
+  "version": "0.11.2",
   "license": "MIT",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "bun": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "sideEffects": false,
-  "files": ["src", "dist"],
+  "files": ["dist", "README.md"],
   "scripts": {
-    "build": "vue-tsc --emitDeclarationOnly",
-    "prepublishOnly": "bun run build"
+    "build": "bunx tsdown --config tsdown.config.ts",
+    "prepack": "bun run build"
   },
   "repository": {
     "type": "git",
@@ -25,16 +25,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "provenance": true,
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "node": "./dist/index.js",
-        "default": "./dist/index.js"
-      }
-    },
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts"
+    "provenance": true
   },
   "peerDependencies": {
     "vue": "^3.4.0",
@@ -51,5 +42,10 @@
     "@nanostores/vue": "^1.1.0",
     "@vueuse/core": "^14.2.1",
     "nanostores": "^1.2.0"
+  },
+  "devDependencies": {
+    "tsdown": "^0.21.7",
+    "unplugin-raw": "^0.6.4",
+    "unplugin-vue": "^7.1.1"
   }
 }
