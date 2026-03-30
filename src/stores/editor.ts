@@ -73,6 +73,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
       mobileDrawerSnap: 'closed' | 'half' | 'full'
       clipboardHtml: string
       autosaveEnabled: boolean
+      leftPanelTab: 'layers' | 'daims-assets'
       cursorCanvasX: number | null
       cursorCanvasY: number | null
       nodeEditState: {
@@ -109,7 +110,8 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     autosaveEnabled: false,
     cursorCanvasX: null,
     cursorCanvasY: null,
-    nodeEditState: null
+    nodeEditState: null,
+    leftPanelTab: 'layers'
   })
 
   const editor = createEditor({ graph, state, loadFont, skipInitialGraphSetup: !!initialGraph })

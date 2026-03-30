@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
+import {
+  SplitterGroup,
+  SplitterPanel,
+  TabsContent,
+  TabsList,
+  TabsRoot,
+  TabsTrigger
+} from 'reka-ui'
 
 import { useI18n } from '@open-pencil/vue'
-
+import { useEditorStore } from '@/stores/editor'
 import AppMenu from './AppMenu.vue'
 import LayerTree from './LayerTree.vue'
-import PagesPanel from './PagesPanel.vue'
+import DaimsAssetPanel from './DaimsAssetPanel.vue'
+// import PagesPanel from './PagesPanel.vue'
 
 const { panels } = useI18n()
+const store = useEditorStore()
 </script>
 
 <template>
@@ -18,27 +27,47 @@ const { panels } = useI18n()
   >
     <AppMenu />
     <SplitterGroup direction="vertical" auto-save-id="layers-layout" class="flex-1 overflow-hidden">
-      <SplitterPanel
+      <!-- <SplitterPanel
         :default-size="30"
         :min-size="10"
         :max-size="60"
         class="flex flex-col overflow-hidden"
       >
         <PagesPanel />
-      </SplitterPanel>
-      <SplitterResizeHandle class="group relative z-10 -my-1 h-2 cursor-row-resize">
+      </SplitterPanel> -->
+      <!-- <SplitterResizeHandle class="group relative z-10 -my-1 h-2 cursor-row-resize">
         <div
           class="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border"
         />
-      </SplitterResizeHandle>
+      </SplitterResizeHandle> -->
       <SplitterPanel :default-size="70" :min-size="20" class="flex flex-col overflow-hidden">
-        <header
-          data-test-id="layers-header"
-          class="shrink-0 px-3 py-2 text-[11px] tracking-wider text-muted uppercase"
-        >
-          {{ panels.layers }}
-        </header>
-        <LayerTree />
+        <TabsRoot v-model="store.state.leftPanelTab" class="flex min-h-0 flex-1 flex-col">
+          <TabsList data-test-id="layers-header" class="flex shrink-0 items-center gap-2 px-3 py-2">
+            <TabsTrigger
+              value="layers"
+              class="text-[11px] tracking-wider text-muted uppercase hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
+            >
+              {{ panels.layers }}
+            </TabsTrigger>
+            <TabsTrigger
+              value="daims-assets"
+              class="text-[11px] tracking-wider text-muted uppercase hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
+            >
+              Daims-Assets
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
+            value="layers"
+            class="flex min-h-0 flex-1 flex-col"
+            :force-mount="true"
+            :hidden="store.state.leftPanelTab !== 'layers'"
+          >
+            <LayerTree data-test-id="layers-tree" />
+          </TabsContent>
+          <TabsContent value="daims-assets" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <DaimsAssetPanel />
+          </TabsContent>
+        </TabsRoot>
       </SplitterPanel>
     </SplitterGroup>
   </aside>

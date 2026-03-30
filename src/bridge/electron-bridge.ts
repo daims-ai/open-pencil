@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+import { ref, readonly, shallowRef, triggerRef } from 'vue'
 
 import { IS_FROM_DAIMS } from '@open-pencil/core'
 
@@ -17,8 +17,18 @@ interface LoadFilePayload {
   data: number[]
 }
 
+export interface DaimsAssetImage {
+  id: number
+  name: string
+  thumbnailUrl: string
+  width: number
+  height: number
+  data?: number[]
+}
+
 const externalConfig = ref<OpenPencilConfig | null>(null)
 const configReceived = ref(false)
+const daimsAssetImages = shallowRef<DaimsAssetImage[]>([])
 
 let configResolvers: Array<(config: OpenPencilConfig) => void> = []
 
@@ -45,6 +55,17 @@ function initPostMessageBridge() {
       return
     }
 
+    if (type === 'open-pencil:asset-images') {
+      daimsAssetImages.value = payload as DaimsAssetImage[]
+      triggerRef(daimsAssetImages)
+      return
+    }
+
+    if (type === 'open-pencil:asset-image-data') {
+      void handlePlaceAssetImage(payload as DaimsAssetImage)
+      return
+    }
+
     if (type !== 'open-pencil:config') return
 
     const config = payload as OpenPencilConfig
@@ -56,6 +77,26 @@ function initPostMessageBridge() {
     }
     configResolvers = []
   })
+}
+
+async function handlePlaceAssetImage(asset: DaimsAssetImage) {
+  if (!asset.data) return
+  const { getActiveEditorStore } = await import('@/stores/editor')
+  try {
+    const store = getActiveEditorStore()
+    const bytes = new Uint8Array(asset.data)
+    const ext = asset.name.match(/\.(\w+)$/)?.[1] ?? 'png'
+    const file = new File([bytes], asset.name, { type: `image/${ext}` })
+    const center = store.viewportScreenCenter()
+    const { x: cx, y: cy } = store.screenToCanvas(center.x, center.y)
+    await store.placeImageFiles([file], cx, cy)
+  } catch (e) {
+    console.error('[electron-bridge] Failed to place asset image:', e)
+  }
+}
+
+export function requestAssetImagePlace(assetId: number): void {
+  postMessageToParent('open-pencil:request-asset-image', { id: assetId })
 }
 
 export function waitForExternalConfig(): Promise<OpenPencilConfig> {
@@ -77,8 +118,10 @@ export function useElectronBridge() {
   return {
     externalConfig: readonly(externalConfig),
     configReceived: readonly(configReceived),
+    daimsAssetImages: readonly(daimsAssetImages),
     waitForExternalConfig,
-    postMessageToParent
+    postMessageToParent,
+    requestAssetImagePlace
   }
 }
 
