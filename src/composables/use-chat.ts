@@ -140,7 +140,6 @@ async function initElectronConfig() {
   }
 }
 
-
 function setAPIKey(key: string) {
   apiKey.value = key
 }

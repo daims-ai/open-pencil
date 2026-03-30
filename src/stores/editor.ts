@@ -1,6 +1,7 @@
 import { useDebounceFn } from '@vueuse/core'
 import { shallowReactive, shallowRef, computed, watch, triggerRef } from 'vue'
 
+import { postMessageToParent } from '@/bridge/electron-bridge'
 import { IS_TAURI } from '@/constants'
 import { loadFont } from '@/engine/fonts'
 import { toast } from '@/utils/toast'
@@ -23,7 +24,8 @@ import {
   renderNodesToImage,
   SceneGraph,
   splitSegmentAt,
-  prefetchFigmaSchema
+  prefetchFigmaSchema,
+  IS_FROM_DAIMS
 } from '@open-pencil/core'
 
 import type {
@@ -275,7 +277,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
   function walkChainToEnd(segments: { start: number; end: number }[], start: number): number {
     let current = start
     const visited = new Set<number>([start])
-    for (;;) {
+    for (; ;) {
       let found = false
       for (const seg of segments) {
         let next = -1
@@ -306,7 +308,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     orderedVertices.push(absVertices[current])
     visited.add(current)
 
-    for (;;) {
+    for (; ;) {
       let foundSeg = false
       for (const seg of absSegments) {
         let next = -1
@@ -882,6 +884,13 @@ export function createEditorStore(initialGraph?: SceneGraph) {
   }
 
   async function saveFigFile() {
+    if (IS_FROM_DAIMS) {
+      const data = await buildFigFile()
+      postMessageToParent('open-pencil:save-file', {
+        data: Array.from(new Uint8Array(data))
+      })
+      return
+    }
     if (filePath || fileHandle) {
       await writeFile(await buildFigFile())
     } else if (downloadName) {

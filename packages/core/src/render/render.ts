@@ -26,6 +26,7 @@ export function buildComponent(jsxString: string): () => unknown {
     production: true
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-implied-eval -- intentional: execute sucrase-compiled JSX
   return new Function('React', result.code)(React) as () => unknown
 }
 

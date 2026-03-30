@@ -7,25 +7,53 @@ export interface OpenPencilConfig {
   apiKey: string
 }
 
+export interface OpenPencilMessage<T = unknown> {
+  type: string
+  payload: T
+}
+
+interface LoadFilePayload {
+  fileName: string
+  data: number[]
+}
+
 const externalConfig = ref<OpenPencilConfig | null>(null)
 const configReceived = ref(false)
 
 let configResolvers: Array<(config: OpenPencilConfig) => void> = []
 
-function initElectronBridge() {
+async function handleLoadFile(payload: LoadFilePayload) {
+  const { getActiveEditorStore } = await import('@/stores/editor')
+  try {
+    const store = getActiveEditorStore()
+    const bytes = new Uint8Array(payload.data)
+    const file = new File([bytes], payload.fileName)
+    await store.openFigFile(file)
+  } catch (e) {
+    console.error('[electron-bridge] Failed to load .fig file:', e)
+  }
+}
+
+function initPostMessageBridge() {
   if (!IS_FROM_DAIMS) return
 
-  const bridge = (window as Window & { openPencilBridge?: typeof window.openPencilBridge }).openPencilBridge
-  if (!bridge) {
-    console.warn('[electron-bridge] openPencilBridge not found')
-    return
-  }
+  window.addEventListener('message', (event: MessageEvent<OpenPencilMessage>) => {
+    const { type, payload } = event.data
 
-  bridge.onConfig((config) => {
+    if (type === 'open-pencil:load-file') {
+      void handleLoadFile(payload as LoadFilePayload)
+      return
+    }
+
+    if (type !== 'open-pencil:config') return
+
+    const config = payload as OpenPencilConfig
     externalConfig.value = config
     configReceived.value = true
 
-    configResolvers.forEach((resolve) => resolve(config))
+    for (const resolve of configResolvers) {
+      resolve(config)
+    }
     configResolvers = []
   })
 }
@@ -40,24 +68,20 @@ export function waitForExternalConfig(): Promise<OpenPencilConfig> {
   })
 }
 
+export function postMessageToParent(type: string, payload: unknown): void {
+  if (!IS_FROM_DAIMS) return
+  window.parent.postMessage({ type, payload }, '*')
+}
+
 export function useElectronBridge() {
   return {
     externalConfig: readonly(externalConfig),
     configReceived: readonly(configReceived),
     waitForExternalConfig,
-  }
-}
-
-declare global {
-  interface Window {
-    openPencilBridge?: {
-      waitForConfig(): Promise<OpenPencilConfig>
-      onConfig(callback: (config: OpenPencilConfig) => void): () => void
-      sendMessage(data: unknown): void
-    }
+    postMessageToParent
   }
 }
 
 if (IS_FROM_DAIMS) {
-  initElectronBridge()
+  initPostMessageBridge()
 }

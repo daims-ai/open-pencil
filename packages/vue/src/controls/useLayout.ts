@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 
 import { useEditor } from '@open-pencil/vue/context/editorContext'
-import { useSceneComputed } from '@open-pencil/vue/internal/useSceneComputed'
 import { useI18n } from '@open-pencil/vue/i18n'
+import { useSceneComputed } from '@open-pencil/vue/internal/useSceneComputed'
 
 import type {
   SceneNode,

@@ -3,7 +3,7 @@ import type { Color } from './types'
 
 export const IS_BROWSER = typeof window !== 'undefined'
 export const IS_TAURI = IS_BROWSER && '__TAURI_INTERNALS__' in window
-export const IS_FROM_DAIMS = IS_BROWSER && 'openPencilBridge' in window
+export const IS_FROM_DAIMS = IS_BROWSER && window.parent !== window
 
 export const BLACK: Color = { r: 0, g: 0, b: 0, a: 1 }
 export const TRANSPARENT: Color = { r: 0, g: 0, b: 0, a: 0 }
@@ -175,8 +175,9 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     name: 'OpenAI',
     keyPlaceholder: 'sk-…',
     keyURL: 'https://platform.openai.com/api-keys',
-    defaultModel: 'gpt-5.3-codex',
+    defaultModel: 'gpt-5.4',
     models: [
+      { id: 'gpt-5.4', name: 'GPT-5.4' },
       { id: 'gpt-5.3-codex', name: 'GPT-5.3 Codex' },
       { id: 'gpt-4.1', name: 'GPT-4.1' },
       { id: 'o3', name: 'o3', tag: 'Reasoning' },

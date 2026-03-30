@@ -11,6 +11,7 @@ import { DEFAULT_COLLAB_STATE, useCollabInjected } from '@/composables/use-colla
 import { toast } from '@/utils/toast'
 import { initials } from '@/utils/text'
 import { useI18n } from '@open-pencil/vue'
+import { useEditorStore } from '@/stores/editor'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,12 +67,18 @@ function onDisconnect() {
   collab.disconnect()
   router.push('/')
 }
+
+const store = useEditorStore()
+
+function handleSave() {
+  store.saveFigFile()
+}
 </script>
 
 <template>
   <div class="flex w-full items-center justify-end gap-2">
     <!-- Avatar stack -->
-    <div class="flex -space-x-1.5">
+    <!-- <div class="flex -space-x-1.5">
       <Tip :label="`${state.localName || 'You'} (you)`">
         <div
           data-test-id="collab-local-avatar"
@@ -103,11 +110,20 @@ function onDisconnect() {
           {{ initials(peer.name) }}
         </div>
       </Tip>
-    </div>
+    </div> -->
 
     <div class="flex-1" />
 
-    <!-- Share button / popover -->
+    <button
+      @click="handleSave"
+      class="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border-none px-3 text-xs font-medium transition-colors"
+      :class="'bg-accent text-white hover:bg-accent/90'"
+    >
+      Save
+    </button>
+
+    <!--
+    ~~ Share button / popover ~~
     <PopoverRoot v-model:open="popoverOpen">
       <PopoverTrigger as-child>
         <button
@@ -134,7 +150,7 @@ function onDisconnect() {
           side="bottom"
           align="end"
         >
-          <!-- Connected state -->
+          ~~ Connected state ~~
           <template v-if="state.connected">
             <div class="mb-3 text-xs font-medium text-surface">{{ dialogs.roomLink }}</div>
             <div class="mb-3 flex items-center gap-1.5">
@@ -169,7 +185,7 @@ function onDisconnect() {
             </button>
           </template>
 
-          <!-- Joining via /share/ link -->
+          ~~ Joining via /share/ link ~~
           <template v-else-if="isJoining">
             <div class="mb-1 text-xs font-medium text-surface">{{ dialogs.joinCollaboration }}</div>
             <div class="mb-3 text-[11px] text-muted">
@@ -199,7 +215,7 @@ function onDisconnect() {
             </button>
           </template>
 
-          <!-- Not connected: share or join -->
+          ~~ Not connected: share or join ~~
           <template v-else>
             <div class="mb-3">
               <label class="mb-1 block text-xs text-muted">{{ dialogs.yourName }}</label>
@@ -249,5 +265,6 @@ function onDisconnect() {
         </PopoverContent>
       </PopoverPortal>
     </PopoverRoot>
+    -->
   </div>
 </template>
