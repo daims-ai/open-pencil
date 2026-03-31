@@ -62,14 +62,20 @@ export const searchPrompts = defineTool({
       type: 'number',
       description: 'Maximum number of results to return (default: 20)',
       default: 20
+    },
+    link: {
+      type: 'string',
+      description: 'Optional reference URL to filter prompts by associated content',
+      required: false
     }
   },
-  execute: async (_figma, { value, search_type, card_type, limit }) => {
+  execute: async (_figma, { value, search_type, card_type, limit, link }) => {
     try {
       const list = await client.search({
         card_type: (card_type ?? 'create') as 'create' | 'edit',
         search_type: (search_type ?? 'keyword') as 'keyword' | 'style' | 'object',
-        value
+        value,
+        ...(link && { link })
       })
 
       if (!list.success) {
