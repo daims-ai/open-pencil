@@ -1,8 +1,10 @@
 import {
+  IS_FROM_DAIMS,
   IS_TAURI,
   loadFont as loadFontCore,
   markFontLoaded,
-  styleToWeight
+  styleToWeight,
+  getDaimsFontProvider
 } from '@open-pencil/core'
 
 interface TauriFontFamily {
@@ -43,6 +45,10 @@ function registerFontFaces(fonts: TauriFontFamily[]): void {
 }
 
 export async function listFamilies(): Promise<string[]> {
+  if (IS_FROM_DAIMS) {
+    return getDaimsFontProvider()?.listFamilies() ?? []
+  }
+
   if (IS_TAURI) {
     const fonts = await getTauriFonts()
     return fonts.map((f) => f.family)
@@ -53,6 +59,24 @@ export async function listFamilies(): Promise<string[]> {
 }
 
 export async function loadFont(family: string, style = 'Regular'): Promise<ArrayBuffer | null> {
+
+  if (IS_FROM_DAIMS) {
+    const provider = getDaimsFontProvider()
+    if (!provider) return null
+    const buffer = await provider.loadFont(family, style)
+    if (!buffer) return null
+
+    markFontLoaded(family, style, buffer)
+
+    const weight = styleToWeight(style)
+    const italic = style.toLowerCase().includes('italic') ? 'italic' : 'normal'
+    const face = new FontFace(family, buffer, { weight: String(weight), style: italic })
+    await face.load()
+    document.fonts.add(face)
+
+    return buffer
+  }
+
   if (IS_TAURI) {
     try {
       const { invoke } = await import('@tauri-apps/api/core')

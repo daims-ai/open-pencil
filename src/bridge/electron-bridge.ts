@@ -1,6 +1,6 @@
 import { ref, readonly, shallowRef, triggerRef } from 'vue'
 
-import { IS_FROM_DAIMS } from '@open-pencil/core'
+import { IS_FROM_DAIMS, setDaimsFontProvider } from '@open-pencil/core'
 
 export interface OpenPencilConfig {
   providerID: string
@@ -30,6 +30,12 @@ export interface DaimsAssetImage {
 const externalConfig = ref<OpenPencilConfig | null>(null)
 const configReceived = ref(false)
 const daimsAssetImages = shallowRef<DaimsAssetImage[]>([])
+
+let fontRequestId = 0
+const pendingFontRequests = new Map<number, (data: ArrayBuffer | null) => void>()
+
+let pushedFontFamilies: string[] | null = null
+let fontFamilyWaiters: Array<(families: string[]) => void> = []
 
 let configResolvers: Array<(config: OpenPencilConfig) => void> = []
 
@@ -64,6 +70,28 @@ function initPostMessageBridge() {
 
     if (type === 'open-pencil:asset-image-data') {
       void handlePlaceAssetImage(payload as DaimsAssetImage)
+      return
+    }
+
+    if (type === 'open-pencil:font-data') {
+      const { requestId, data } = payload as { requestId: number; data: number[] | null }
+      const resolve = pendingFontRequests.get(requestId)
+      if (resolve) {
+        pendingFontRequests.delete(requestId)
+        resolve(data ? new Uint8Array(data).buffer : null)
+      }
+      console.log('[electron-bridge] Font data received:', data)
+      return
+    }
+
+    if (type === 'open-pencil:font-families') {
+      const { families } = payload as { families: string[] }
+      pushedFontFamilies = families
+      console.log('[electron-bridge] Font families received:', families)
+      for (const waiter of fontFamilyWaiters) {
+        waiter(families)
+      }
+      fontFamilyWaiters = []
       return
     }
 
@@ -128,4 +156,19 @@ export function useElectronBridge() {
 
 if (IS_FROM_DAIMS) {
   initPostMessageBridge()
+
+  setDaimsFontProvider({
+    loadFont: (family, style) =>
+      new Promise((resolve) => {
+        const id = fontRequestId++
+        pendingFontRequests.set(id, resolve)
+        postMessageToParent('open-pencil:request-font', { requestId: id, family, style })
+      }),
+    listFamilies: () => {
+      if (pushedFontFamilies) return Promise.resolve(pushedFontFamilies)
+      return new Promise((resolve) => {
+        fontFamilyWaiters.push(resolve)
+      })
+    }
+  })
 }

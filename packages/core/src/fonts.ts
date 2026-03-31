@@ -18,6 +18,21 @@ export interface FontInfo {
   postscriptName: string
 }
 
+export interface DaimsFontProvider {
+  loadFont: (family: string, style: string) => Promise<ArrayBuffer | null>
+  listFamilies: () => Promise<string[]>
+}
+
+let daimsFontProvider: DaimsFontProvider | null = null
+
+export function setDaimsFontProvider(provider: DaimsFontProvider): void {
+  daimsFontProvider = provider
+}
+
+export function getDaimsFontProvider(): DaimsFontProvider | null {
+  return daimsFontProvider
+}
+
 const loadedFamilies = new Map<string, ArrayBuffer>()
 let fontProvider: TypefaceFontProvider | null = null
 
@@ -30,7 +45,7 @@ export function getFontProvider(): TypefaceFontProvider | null {
 }
 
 async function queryFonts(): Promise<FontInfo[]> {
-  if (!IS_BROWSER || !window.queryLocalFonts) return []
+  if (!window.queryLocalFonts) return []
   try {
     const fonts = await window.queryLocalFonts()
     const seen = new Set<string>()
@@ -126,7 +141,7 @@ async function fetchGoogleFont(family: string, style: string): Promise<ArrayBuff
 }
 
 async function findLocalFont(family: string, style?: string): Promise<ArrayBuffer | null> {
-  if (!IS_BROWSER || !window.queryLocalFonts) return null
+  if (!window.queryLocalFonts) return null
   try {
     const fonts = await window.queryLocalFonts()
     const families = [family]

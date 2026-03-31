@@ -8,6 +8,7 @@ import {
   ComboboxItemIndicator,
   ComboboxPortal,
   ComboboxRoot,
+  ComboboxTrigger,
   ComboboxVirtualizer,
   ComboboxViewport,
   type AcceptableValue
@@ -56,11 +57,13 @@ const { searchTerm, open, filtered, select } = useFontPicker({
     "
   >
     <ComboboxAnchor as-child>
-      <slot name="trigger" :value="modelValue" :open="open">
-        <button :class="triggerClass">
-          <span class="truncate">{{ modelValue }}</span>
-        </button>
-      </slot>
+      <ComboboxTrigger as-child>
+        <slot name="trigger" :value="modelValue" :open="open">
+          <button :class="triggerClass">
+            <span class="truncate">{{ modelValue }}</span>
+          </button>
+        </slot>
+      </ComboboxTrigger>
     </ComboboxAnchor>
 
     <ComboboxPortal>
@@ -92,18 +95,18 @@ const { searchTerm, open, filtered, select } = useFontPicker({
             :text-content="(family: string) => family"
             :estimate-size="36"
           >
-            <slot name="item" :family="option" :selected="option === modelValue">
-              <ComboboxItem
-                :value="option"
-                :class="itemClass"
-                :style="{ fontFamily: `'${option}', sans-serif` }"
-              >
+            <ComboboxItem
+              :value="option"
+              :class="itemClass"
+              :style="{ fontFamily: `'${option}', sans-serif` }"
+            >
+              <slot name="item" :family="option" :selected="option === modelValue">
                 <ComboboxItemIndicator>
                   <slot name="indicator" :selected="option === modelValue" />
                 </ComboboxItemIndicator>
                 <span class="truncate">{{ option }}</span>
-              </ComboboxItem>
-            </slot>
+              </slot>
+            </ComboboxItem>
           </ComboboxVirtualizer>
 
           <div v-if="filtered.length === 0 && searchTerm" :class="emptyClass">

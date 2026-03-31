@@ -183,8 +183,11 @@ export {
   normalizeFontFamily,
   isVariableFont,
   styleToVariant,
-  fetchBundledFont
+  fetchBundledFont,
+  setDaimsFontProvider,
+  getDaimsFontProvider
 } from './fonts'
+export type { DaimsFontProvider } from './fonts'
 export {
   parseColor,
   normalizeColor,
