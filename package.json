@@ -1,7 +1,7 @@
 {
   "name": "open-pencil-app",
   "private": true,
-  "version": "0.10.0",
+  "version": "0.11.2",
   "license": "MIT",
   "type": "module",
   "workspaces": [
@@ -14,7 +14,8 @@
     "tauri": "tauri",
     "lint": "oxlint -c oxlint.json --type-aware --type-check src/ packages/core/src/ packages/cli/src/ packages/mcp/src/",
     "format": "oxfmt --write src/ packages/core/src/ packages/cli/src/ packages/mcp/src/ packages/vue/src/",
-    "check": "bun run lint && tsgo --noEmit && vue-tsc --noEmit",
+    "check": "bun run lint && tsgo --noEmit && bun run check:vue",
+    "check:vue": "vue-tsc --noEmit -p tsconfig.json && vue-tsc --noEmit -p packages/vue/tsconfig.json",
     "test": "playwright test --project=openpencil",
     "test:update": "playwright test --project=openpencil --update-snapshots",
     "test:figma": "playwright test --project=figma",
@@ -88,6 +89,8 @@
     "@types/ws": "^8.18.1",
     "@typescript/native-preview": "^7.0.0-dev.20260228.1",
     "@vitejs/plugin-vue": "^6.0.5",
+    "unplugin-vue": "^7.1.1",
+    "unplugin-raw": "^0.6.4",
     "esbuild": "^0.27.3",
     "hono": "^4.12.5",
     "jscpd": "^4.0.8",
@@ -102,6 +105,7 @@
     "vite": "^8.0.0",
     "vite-plugin-pwa": "^1.2.0",
     "vue-tsc": "^3.2.5",
+    "tsdown": "^0.21.7",
     "workbox-window": "^7.4.0",
     "ws": "^8.19.0"
   }
