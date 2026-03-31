@@ -68,7 +68,7 @@ function handleImageClick(img: { id: number }) {
             @click="handleImageClick(img)"
           >
             <div
-              class="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-canvas"
+              class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-canvas"
             >
               <img
                 :src="img.thumbnailUrl"
@@ -77,7 +77,7 @@ function handleImageClick(img: { id: number }) {
               />
             </div>
             <div class="min-w-0 flex-1">
-              <p class="truncate text-xs text-surface">{{ img.name }}</p>
+              <p class="truncate text-[10px] text-surface">{{ img.name }}</p>
               <p class="text-[10px] text-muted">{{ img.width }} × {{ img.height }}</p>
             </div>
             <icon-lucide-plus

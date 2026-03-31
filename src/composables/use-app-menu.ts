@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { openFileDialog } from '@/composables/use-menu'
+// import { openFileDialog } from '@/composables/use-menu'
 import { useEditorStore } from '@/stores/editor'
 import { useEditorCommands, useI18n } from '@open-pencil/vue'
 
@@ -30,15 +30,15 @@ export function useAppMenu(mod: string) {
     {
       label: t.value.file,
       items: [
-        {
-          label: t.value.new,
-          shortcut: `${mod}N`,
-          action: () => {
-            void import('@/stores/tabs').then((m) => m.createTab())
-          }
-        },
-        { label: t.value.open, shortcut: `${mod}O`, action: () => void openFileDialog() },
-        { separator: true as const },
+        // {
+        //   label: t.value.new,
+        //   shortcut: `${mod}N`,
+        //   action: () => {
+        //     void import('@/stores/tabs').then((m) => m.createTab())
+        //   }
+        // },
+        // { label: t.value.open, shortcut: `${mod}O`, action: () => void openFileDialog() },
+        // { separator: true as const },
         { label: t.value.save, shortcut: `${mod}S`, action: () => void store.saveFigFile() },
         {
           label: t.value.saveAs,
