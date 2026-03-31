@@ -11,7 +11,7 @@ const placingId = ref<number | null>(null)
 const filteredImages = computed(() => {
   const q = query.value.toLowerCase().trim()
   if (!q) return daimsAssetImages.value
-  return daimsAssetImages.value.filter((img) => img.name.toLowerCase().includes(q))
+  return daimsAssetImages.value.filter((img) => img.name.toLowerCase().includes(q) || img.tags.some((tag) => tag.toLowerCase().includes(q)))
 })
 
 function handleImageClick(img: { id: number }) {
@@ -27,7 +27,7 @@ function handleImageClick(img: { id: number }) {
       <icon-lucide-search class="size-3 shrink-0 text-muted" />
       <input
         v-model="query"
-        placeholder="Search assets..."
+        placeholder="Input name or tag..."
         class="min-w-0 flex-1 bg-transparent text-xs text-surface outline-none placeholder:text-muted"
       />
     </div>
@@ -56,7 +56,7 @@ function handleImageClick(img: { id: number }) {
           <icon-lucide-chevron-down
             class="size-3 transition-transform [[data-state=closed]>&]:rotate-[-90deg]"
           />
-          Images ({{ daimsAssetImages.length }})
+          Images ({{ filteredImages.length }})
         </CollapsibleTrigger>
         <CollapsibleContent>
           <button

@@ -24,6 +24,7 @@ export interface DaimsAssetImage {
   width: number
   height: number
   data?: number[]
+  tags: string[]
 }
 
 const externalConfig = ref<OpenPencilConfig | null>(null)
