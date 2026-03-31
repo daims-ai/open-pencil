@@ -12,6 +12,7 @@ import { toast } from '@/utils/toast'
 import { initials } from '@/utils/text'
 import { useI18n } from '@open-pencil/vue'
 import { useEditorStore } from '@/stores/editor'
+import { postMessageToParent } from '@/bridge/electron-bridge'
 
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +74,12 @@ const store = useEditorStore()
 function handleSave() {
   store.saveFigFile()
 }
+
+async function handleDone() {
+  await store.saveFigFile()
+  postMessageToParent('open-pencil:done', {})
+}
+
 </script>
 
 <template>
@@ -120,6 +127,14 @@ function handleSave() {
       :class="'bg-accent text-white hover:bg-accent/90'"
     >
       Save
+    </button>
+
+    <button
+      @click="handleDone"
+      class="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border-none px-3 text-xs font-medium transition-colors"
+      :class="'bg-accent text-white hover:bg-accent/90'"
+    >
+      Done
     </button>
 
     <!--
