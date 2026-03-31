@@ -2,7 +2,11 @@ import { DaimsClient } from 'prompt-searcher'
 
 import { defineTool } from './schema'
 
-const client = new DaimsClient()
+let client = new DaimsClient()
+
+export function setDaimsApiKey(key: string | null): void {
+  client = new DaimsClient({ apiKey: key ?? undefined })
+}
 
 export interface PromptSearchResult {
   success: boolean

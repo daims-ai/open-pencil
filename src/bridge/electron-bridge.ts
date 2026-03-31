@@ -1,10 +1,11 @@
 import { ref, readonly, shallowRef, triggerRef } from 'vue'
 
-import { IS_FROM_DAIMS, setDaimsFontProvider } from '@open-pencil/core'
+import { IS_FROM_DAIMS, setDaimsFontProvider, setDaimsApiKey } from '@open-pencil/core'
 
 export interface OpenPencilConfig {
   providerID: string
   apiKey: string
+  daimsApiKey?: string
 }
 
 export interface OpenPencilMessage<T = unknown> {
@@ -80,14 +81,12 @@ function initPostMessageBridge() {
         pendingFontRequests.delete(requestId)
         resolve(data ? new Uint8Array(data).buffer : null)
       }
-      console.log('[electron-bridge] Font data received:', data)
       return
     }
 
     if (type === 'open-pencil:font-families') {
       const { families } = payload as { families: string[] }
       pushedFontFamilies = families
-      console.log('[electron-bridge] Font families received:', families)
       for (const waiter of fontFamilyWaiters) {
         waiter(families)
       }
@@ -100,6 +99,10 @@ function initPostMessageBridge() {
     const config = payload as OpenPencilConfig
     externalConfig.value = config
     configReceived.value = true
+
+    if (config.daimsApiKey) {
+      setDaimsApiKey(config.daimsApiKey)
+    }
 
     for (const resolve of configResolvers) {
       resolve(config)
