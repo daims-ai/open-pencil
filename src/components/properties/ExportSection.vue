@@ -6,8 +6,11 @@ import { iconButton } from '@/components/ui/icon-button'
 import { sectionLabel, sectionWrapper } from '@/components/ui/section'
 import { useEditorStore } from '@/stores/editor'
 import { useExport, useI18n } from '@open-pencil/vue'
+import { postMessageToParent } from '@/bridge/electron-bridge'
 
 import type { ExportFormatId } from '@open-pencil/vue/controls/useExport'
+import type { RasterExportFormat } from '@open-pencil/core'
+import { IS_FROM_DAIMS } from '@/constants'
 
 const editorStore = useEditorStore()
 const { panels } = useI18n()
@@ -61,9 +64,46 @@ function updateFormat(index: number, format: ExportFormatId) {
   else updatePageFormat(index, format)
 }
 
+const RASTER_FORMATS = new Set<string>(['png', 'jpg', 'webp'])
+const MIME_TYPES: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  webp: 'image/webp'
+}
+
+function uint8ArrayToDataUrl(data: Uint8Array, mimeType: string): string {
+  let binary = ''
+  const CHUNK = 8192
+  for (let i = 0; i < data.length; i += CHUNK) {
+    binary += String.fromCharCode(...data.subarray(i, i + CHUNK))
+  }
+  return `data:${mimeType};base64,${btoa(binary)}`
+}
+
 async function doExport() {
   exporting.value = true
+
   try {
+    if (IS_FROM_DAIMS) {
+      const ids =
+        activeTarget.value === 'selection'
+          ? [...editorStore.state.selectedIds]
+          : editorStore.graph.getChildren(editorStore.state.currentPageId).map((n) => n.id)
+
+      for (const s of activeSettings.value) {
+        if (!RASTER_FORMATS.has(s.format)) continue
+        const data = await editorStore.renderExportImage(
+          ids,
+          s.scale,
+          s.format.toUpperCase() as RasterExportFormat
+        )
+        if (!data) continue
+        const dataUrl = uint8ArrayToDataUrl(data, MIME_TYPES[s.format])
+        postMessageToParent('open-pencil:save-image', { image: dataUrl })
+      }
+      return
+    }
+
     if (activeTarget.value === 'selection') {
       for (const s of activeSettings.value) await editorStore.exportSelection(s.scale, s.format)
       return
