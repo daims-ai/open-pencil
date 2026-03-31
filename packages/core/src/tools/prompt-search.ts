@@ -5,7 +5,8 @@ import { defineTool } from './schema'
 let client = new DaimsClient()
 
 export function setDaimsApiKey(key: string | null): void {
-  client = new DaimsClient({ apiKey: key ?? undefined })
+  if (!key) return;
+  client = new DaimsClient({ apiKey: key })
 }
 
 export interface PromptSearchResult {
