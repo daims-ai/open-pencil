@@ -121,13 +121,13 @@ async function handleDone() {
 
     <div class="flex-1" />
 
-    <button
+    <!-- <button
       @click="handleSave"
       class="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border-none px-3 text-xs font-medium transition-colors"
       :class="'bg-accent text-white hover:bg-accent/90'"
     >
       Save
-    </button>
+    </button> -->
 
     <button
       @click="handleDone"
