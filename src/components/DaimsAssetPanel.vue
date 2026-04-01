@@ -58,30 +58,19 @@ function handleImageClick(img: { id: number }) {
           />
           Images ({{ filteredImages.length }})
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent class="grid grid-cols-3 gap-1 p-1">
           <button
             v-for="img in filteredImages"
             :key="img.id"
-            class="group flex w-full items-center gap-2 rounded px-2 py-1 text-left transition-colors hover:bg-hover"
+            class="aspect-square overflow-hidden rounded border border-border bg-canvas transition-opacity hover:opacity-80"
             :class="{ 'opacity-50 pointer-events-none': placingId === img.id }"
             :title="`Click to place: ${img.name}`"
             @click="handleImageClick(img)"
           >
-            <div
-              class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-canvas"
-            >
-              <img
-                :src="img.thumbnailUrl"
-                :alt="img.name"
-                class="max-h-full max-w-full object-contain"
-              />
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-[10px] text-surface">{{ img.name }}</p>
-              <p class="text-[10px] text-muted">{{ img.width }} × {{ img.height }}</p>
-            </div>
-            <icon-lucide-plus
-              class="size-3 shrink-0 text-muted opacity-0 transition-opacity group-hover:opacity-100"
+            <img
+              :src="img.thumbnailUrl"
+              :alt="img.name"
+              class="size-full object-contain"
             />
           </button>
         </CollapsibleContent>
