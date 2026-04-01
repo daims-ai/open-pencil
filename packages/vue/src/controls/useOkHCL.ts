@@ -90,13 +90,13 @@ export function useOkHCL() {
   }
 
   function getFieldFormat(node: SceneNode | null, index: number, kind: 'fill' | 'stroke') {
-    if (!node) return 'rgb' as const
+    if (!node) return 'hex' as const
     const key = fieldKey(kind, node.id, index)
     const stored = fieldFormats.value.get(key)
     if (stored) return stored
     return (kind === 'fill' ? getFillOkHCL(node, index) : getStrokeOkHCL(node, index))
       ? 'okhcl'
-      : 'rgb'
+      : 'hex'
   }
 
   function setFillFieldFormat(node: SceneNode, index: number, format: ColorFieldFormat) {
@@ -120,6 +120,7 @@ export function useOkHCL() {
     updateFillOkHCL,
     updateStrokeOkHCL,
     fieldOptions: [
+      { value: 'hex' as const, label: 'HEX' },
       { value: 'rgb' as const, label: 'RGB' },
       { value: 'hsl' as const, label: 'HSL' },
       { value: 'hsb' as const, label: 'HSB' },

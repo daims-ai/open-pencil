@@ -49,15 +49,15 @@ const okhclSliderGradient = computed(() =>
   okhcl?.okhcl ? createOkHCLSliderGradientModel(okhcl.okhcl) : null
 )
 const hexColor = computed(() => colorToHex(color))
-const hexOption = computed(() => ({ value: 'hex' as const, label: panels.value.colorFormatHex }))
-const fieldOptions = computed(() => {
-  const base = okhcl?.fieldOptions ?? [
-    { value: 'rgb' as const, label: panels.value.colorFormatRgb },
-    { value: 'hsl' as const, label: panels.value.colorFormatHsl },
-    { value: 'hsb' as const, label: panels.value.colorFormatHsb }
-  ]
-  return [hexOption.value, ...base]
-})
+const fieldOptions = computed(
+  () =>
+    okhcl?.fieldOptions ?? [
+      { value: 'hex' as const, label: panels.value.colorFormatHex },
+      { value: 'rgb' as const, label: panels.value.colorFormatRgb },
+      { value: 'hsl' as const, label: panels.value.colorFormatHsl },
+      { value: 'hsb' as const, label: panels.value.colorFormatHsb }
+    ]
+)
 const localFieldFormat = ref<'hex' | 'rgb' | 'hsl' | 'hsb'>('hex')
 const fieldFormat = computed(() => okhcl?.fieldFormat ?? localFieldFormat.value)
 const isOkHCLFormat = computed(() => fieldFormat.value === 'okhcl' && okhcl)
