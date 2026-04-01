@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
 
@@ -23,8 +23,10 @@ const { dialogs } = useI18n()
 
 const joinInput = ref('')
 const nameDraft = ref(collab?.state.value.localName ?? '')
-const pendingRoomId = (route.params.roomId as string) || null
-const popoverOpen = ref(!!pendingRoomId)
+const pendingRoomId = computed(() =>
+  typeof route.params.roomId === 'string' ? route.params.roomId : null
+)
+const popoverOpen = ref(!!pendingRoomId.value)
 
 const state = computed(() => collab?.state.value ?? DEFAULT_COLLAB_STATE)
 const peers = computed(() => collab?.remotePeers.value ?? [])
@@ -35,7 +37,17 @@ const shareUrl = computed(() => {
   return `${window.location.origin}/share/${state.value.roomId}`
 })
 
-const isJoining = computed(() => !!pendingRoomId && !state.value.connected)
+const isJoining = computed(() => !!pendingRoomId.value && !state.value.connected)
+
+watch(
+  pendingRoomId,
+  (roomId) => {
+    if (!state.value.connected) {
+      popoverOpen.value = !!roomId
+    }
+  },
+  { immediate: true }
+)
 
 function copyLink() {
   if (!shareUrl.value) return
@@ -55,7 +67,7 @@ function onShare() {
 
 function onJoin() {
   if (!collab) return
-  const roomId = pendingRoomId || joinInput.value.trim().replace(/.*\/share\//, '')
+  const roomId = pendingRoomId.value || joinInput.value.trim().replace(/.*\/share\//, '')
   if (!roomId || !nameDraft.value.trim()) return
   collab.setLocalName(nameDraft.value.trim())
   collab.connect(roomId)
@@ -66,6 +78,7 @@ function onJoin() {
 function onDisconnect() {
   if (!collab) return
   collab.disconnect()
+  popoverOpen.value = false
   router.push('/')
 }
 

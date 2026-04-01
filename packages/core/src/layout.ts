@@ -46,6 +46,10 @@ function estimateTextSize(node: SceneNode, maxWidth?: number): { width: number; 
   return { width: singleLineWidth, height: lineH }
 }
 
+export function getTextMeasurer(): TextMeasurer | null {
+  return globalTextMeasurer
+}
+
 export function setTextMeasurer(measurer: TextMeasurer | null): void {
   globalTextMeasurer = measurer
 }

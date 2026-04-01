@@ -1,4 +1,3 @@
-import { getDefaultRenderColorSpace } from '@open-pencil/core/color-management'
 import { computeContentBounds } from '@open-pencil/core/io/formats/raster'
 
 import { resolveNodeTextDirection } from '../../../direction'
@@ -148,7 +147,8 @@ function nodeShapeElements(
 }
 
 function styleOverrideToTspanAttrs(
-  style: CharacterStyleOverride
+  style: CharacterStyleOverride,
+  colorSpace: 'srgb' | 'display-p3'
 ): Record<string, string | number | undefined> {
   const attrs: Record<string, string | number | undefined> = {}
   if (style.fontFamily) attrs['font-family'] = style.fontFamily
@@ -161,7 +161,7 @@ function styleOverrideToTspanAttrs(
   if (style.fills) {
     const visibleFill = style.fills.find((f) => f.visible && f.type === 'SOLID')
     if (visibleFill) {
-      attrs.fill = formatColor(visibleFill.color, visibleFill.opacity)
+      attrs.fill = formatColor(visibleFill.color, visibleFill.opacity, colorSpace)
     }
   }
   return attrs
@@ -189,7 +189,11 @@ function textXForNode(node: SceneNode, direction: 'LTR' | 'RTL'): number {
   return 0
 }
 
-function renderTextNode(node: SceneNode, fillAttr: string | null): SVGNode {
+function renderTextNode(
+  node: SceneNode,
+  fillAttr: string | null,
+  colorSpace: 'srgb' | 'display-p3'
+): SVGNode {
   const direction = resolveNodeTextDirection(node)
   const textAnchor = textAnchorForNode(node, direction)
 
@@ -218,7 +222,7 @@ function renderTextNode(node: SceneNode, fillAttr: string | null): SVGNode {
     for (const run of node.styleRuns) {
       const text = node.text.slice(pos, pos + run.length)
       pos += run.length
-      spans.push(svg('tspan', styleOverrideToTspanAttrs(run.style), text))
+      spans.push(svg('tspan', styleOverrideToTspanAttrs(run.style, colorSpace), text))
     }
 
     return svg('text', { x, y, ...attrs }, ...spans)
@@ -285,12 +289,13 @@ function buildGroupAttrs(
 }
 
 function buildSVGStrokeAttrs(
-  visibleStrokes: Stroke[]
+  visibleStrokes: Stroke[],
+  colorSpace: 'srgb' | 'display-p3'
 ): Record<string, string | number | undefined> {
   if (visibleStrokes.length === 0) return {}
   const stroke = visibleStrokes[0]
   const attrs: Record<string, string | number | undefined> = {
-    stroke: formatColor(stroke.color, 1),
+    stroke: formatColor(stroke.color, 1, colorSpace),
     'stroke-width': round(stroke.weight)
   }
   if (stroke.opacity < 1) attrs['stroke-opacity'] = round(stroke.opacity)
@@ -347,14 +352,14 @@ function renderNode(node: SceneNode, ctx: SVGExportContext): SVGNode | null {
   if (node.type === 'TEXT') {
     const firstFill = node.fills.find((f) => f.visible)
     const fillAttr = firstFill ? resolveFill(firstFill, node, ctx) : null
-    const textEl = renderTextNode(node, fillAttr)
+    const textEl = renderTextNode(node, fillAttr, ctx.colorSpace)
     return svg('g', groupAttrs, textEl)
   }
 
   const visibleFills = node.fills.filter((f) => f.visible)
   const visibleStrokes = node.strokes.filter((s) => s.visible)
   const fillAttr = visibleFills.length > 0 ? resolveFill(visibleFills[0], node, ctx) : null
-  const strokeAttrs = buildSVGStrokeAttrs(visibleStrokes)
+  const strokeAttrs = buildSVGStrokeAttrs(visibleStrokes, ctx.colorSpace)
 
   const children: (SVGNode | null)[] = buildShapeChildren(
     node,
@@ -400,7 +405,7 @@ function isGroupLike(node: SceneNode): boolean {
 export interface SVGExportOptions {
   /** Include XML declaration (default: true) */
   xmlDeclaration?: boolean
-  /** Target export color space (default: display-p3) */
+  /** Target export color space (default: srgb) */
   colorSpace?: 'srgb' | 'display-p3'
 }
 
@@ -421,7 +426,7 @@ export function renderNodesToSVG(
     defs: [],
     defIdCounter: 0,
     graph,
-    colorSpace: options.colorSpace ?? getDefaultRenderColorSpace()
+    colorSpace: options.colorSpace ?? 'srgb'
   }
 
   const contentNodes: SVGNode[] = []
