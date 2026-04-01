@@ -329,7 +329,6 @@ export function useTextEdit(canvasRef: Ref<HTMLCanvasElement | null>, store: Edi
         el.setAttribute('autocapitalize', 'none')
         el.spellcheck = false
         el.tabIndex = -1
-        el.setAttribute('aria-hidden', 'true')
         document.body.appendChild(el)
         textareaRef.value = el
         el.focus()
