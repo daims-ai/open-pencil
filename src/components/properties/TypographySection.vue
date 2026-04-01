@@ -10,7 +10,15 @@ import Tip from '@/components/ui/Tip.vue'
 import { sectionWrapper } from '@/components/ui/section'
 import { loadFont } from '@/engine/fonts'
 
+import type { TextAutoResize } from '@open-pencil/core'
+
 const { panels } = useI18n()
+
+const resizeOptions: { value: TextAutoResize; label: string; icon: string }[] = [
+  { value: 'WIDTH_AND_HEIGHT', label: 'Auto width', icon: 'auto-wh' },
+  { value: 'HEIGHT', label: 'Auto height', icon: 'auto-h' },
+  { value: 'NONE', label: 'Fixed size', icon: 'fixed' }
+]
 </script>
 
 <template>
@@ -94,6 +102,58 @@ const { panels } = useI18n()
           ]"
           @update:model-value="ctx.setDirection($event as 'AUTO' | 'LTR' | 'RTL')"
         />
+      </div>
+
+      <div class="mb-1.5">
+        <label class="mb-1 block text-[11px] text-muted">Auto Size</label>
+        <ToggleGroupRoot
+          type="single"
+          class="flex gap-0.5"
+          :model-value="ctx.node.value.textAutoResize"
+          @update:model-value="(v: unknown) => v && ctx.setAutoResize(v as TextAutoResize)"
+        >
+          <Tip v-for="opt in resizeOptions" :key="opt.value" :label="opt.label">
+            <ToggleGroupItem
+              :value="opt.value"
+              :data-test-id="`text-resize-${opt.value.toLowerCase()}`"
+              class="flex cursor-pointer items-center justify-center rounded border border-border bg-input px-2 py-1 text-muted hover:bg-hover hover:text-surface data-[state=on]:border-accent data-[state=on]:bg-accent data-[state=on]:text-white"
+            >
+              <svg
+                v-if="opt.icon === 'auto-wh'"
+                class="size-3.5"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M1 3V11" stroke-linecap="round" />
+                <path d="M5 7H11M9 5L11 7L9 9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <svg
+                v-else-if="opt.icon === 'auto-h'"
+                class="size-3.5"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M1 3V11" stroke-linecap="round" />
+                <path d="M5 4H11M5 7H11M5 10H9" stroke-linecap="round" />
+              </svg>
+              <svg
+                v-else
+                class="size-3.5"
+                viewBox="0 0 14 14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <rect x="1" y="2" width="12" height="10" rx="1" />
+                <path d="M4 5H10M4 7.5H10M4 10H7" stroke-linecap="round" />
+              </svg>
+            </ToggleGroupItem>
+          </Tip>
+        </ToggleGroupRoot>
       </div>
 
       <div class="flex items-center gap-3">

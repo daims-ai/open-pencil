@@ -10,7 +10,9 @@ import {
   FLASH_ATTACK_MS,
   FLASH_HOLD_MS,
   FLASH_RELEASE_MS,
-  FLASH_OVERSHOOT
+  FLASH_OVERSHOOT,
+  TEXT_RESIZE_INDICATOR_SIZE,
+  TEXT_RESIZE_INDICATOR_GAP
 } from '../constants'
 import { rotatedCorners } from '../geometry'
 import { drawNodeHighlightRect } from './highlight-rect'
@@ -180,6 +182,35 @@ function withNodeBounds(
   canvas.restore()
 }
 
+function drawTextResizeIndicator(
+  r: SkiaRenderer,
+  canvas: Canvas,
+  x: number,
+  y: number,
+  direction: 'horizontal' | 'vertical' | 'both'
+): void {
+  const size = TEXT_RESIZE_INDICATOR_SIZE
+  const gap = TEXT_RESIZE_INDICATOR_GAP
+
+  r.auxStroke.setStrokeWidth(1.5)
+  r.auxStroke.setColor(r.selColor())
+  r.auxStroke.setPathEffect(null)
+
+  if (direction === 'horizontal' || direction === 'both') {
+    canvas.drawLine(x - size / 2, y, x - gap, y, r.auxStroke)
+    canvas.drawLine(x + gap, y, x + size / 2, y, r.auxStroke)
+    canvas.drawLine(x - size / 2, y - 2, x - size / 2, y + 2, r.auxStroke)
+    canvas.drawLine(x + size / 2, y - 2, x + size / 2, y + 2, r.auxStroke)
+  }
+
+  if (direction === 'vertical' || direction === 'both') {
+    canvas.drawLine(x, y - size / 2, x, y - gap, r.auxStroke)
+    canvas.drawLine(x, y + gap, x, y + size / 2, r.auxStroke)
+    canvas.drawLine(x - 2, y - size / 2, x + 2, y - size / 2, r.auxStroke)
+    canvas.drawLine(x - 2, y + size / 2, x + 2, y + size / 2, r.auxStroke)
+  }
+}
+
 export function drawNodeSelection(
   r: SkiaRenderer,
   canvas: Canvas,
@@ -197,10 +228,29 @@ export function drawNodeSelection(
 
     const mx = (x1 + x2) / 2
     const my = (y1 + y2) / 2
-    r.drawHandle(canvas, mx, y1)
-    r.drawHandle(canvas, mx, y2)
-    r.drawHandle(canvas, x1, my)
-    r.drawHandle(canvas, x2, my)
+
+    if (node.type === 'TEXT') {
+      const autoResize = node.textAutoResize
+      if (autoResize === 'WIDTH_AND_HEIGHT') {
+        drawTextResizeIndicator(r, canvas, x2, my, 'horizontal')
+        drawTextResizeIndicator(r, canvas, mx, y2, 'vertical')
+      } else if (autoResize === 'HEIGHT') {
+        r.drawHandle(canvas, mx, y1)
+        r.drawHandle(canvas, x1, my)
+        r.drawHandle(canvas, x2, my)
+        drawTextResizeIndicator(r, canvas, mx, y2, 'vertical')
+      } else {
+        r.drawHandle(canvas, mx, y1)
+        r.drawHandle(canvas, mx, y2)
+        r.drawHandle(canvas, x1, my)
+        r.drawHandle(canvas, x2, my)
+      }
+    } else {
+      r.drawHandle(canvas, mx, y1)
+      r.drawHandle(canvas, mx, y2)
+      r.drawHandle(canvas, x1, my)
+      r.drawHandle(canvas, x2, my)
+    }
   })
 }
 

@@ -46,7 +46,7 @@ export function useTextEdit(canvasRef: Ref<HTMLCanvasElement | null>, store: Edi
   function syncText(nodeId: string, text: string, runs?: SceneNode['styleRuns']) {
     const changes: Partial<SceneNode> = { text }
     if (runs !== undefined) changes.styleRuns = runs
-    store.graph.updateNode(nodeId, changes)
+    store.updateNode(nodeId, changes)
     store.requestRender()
   }
 

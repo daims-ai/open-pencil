@@ -5,7 +5,7 @@ import { useEditor } from '@open-pencil/vue/context/editorContext'
 import { useSceneComputed } from '@open-pencil/vue/internal/useSceneComputed'
 import { useNodeFontStatus } from '@open-pencil/vue/shared/useFontStatus'
 
-import type { SceneNode, TextDecoration } from '@open-pencil/core'
+import type { SceneNode, TextAutoResize, TextDecoration } from '@open-pencil/core'
 
 type TextAlign = 'LEFT' | 'CENTER' | 'RIGHT'
 type TextDirection = SceneNode['textDirection']
@@ -90,6 +90,11 @@ export function useTypography(options: UseTypographyOptions = {}) {
     editor.updateNodeWithUndo(node.value.id, { textDirection: direction }, 'Change text direction')
   }
 
+  function setAutoResize(autoResize: TextAutoResize) {
+    if (!node.value) return
+    editor.updateNodeWithUndo(node.value.id, { textAutoResize: autoResize }, 'Change text resize')
+  }
+
   function toggleBold() {
     if (!node.value) return
     setWeight(node.value.fontWeight >= 700 ? 400 : 700)
@@ -152,6 +157,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
     setWeight,
     setAlign,
     setDirection,
+    setAutoResize,
     toggleBold,
     toggleItalic,
     toggleDecoration,

@@ -92,6 +92,9 @@ export const TEXT_SELECTION_COLOR = { r: 0.26, g: 0.52, b: 0.96, a: 0.3 }
 export const TEXT_CARET_COLOR = BLACK
 export const TEXT_CARET_WIDTH = 1
 
+export const TEXT_RESIZE_INDICATOR_SIZE = 8
+export const TEXT_RESIZE_INDICATOR_GAP = 4
+
 export type ACPAgentID = 'claude-code' | 'codex' | 'gemini-cli'
 
 export interface ACPAgentDef {

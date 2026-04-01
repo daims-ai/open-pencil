@@ -28,6 +28,7 @@ function onFormattingChange(val: AcceptableValue | AcceptableValue[]) {
     :set-family="ctx.setFamily"
     :set-weight="ctx.setWeight"
     :set-direction="ctx.setDirection"
+    :set-auto-resize="ctx.setAutoResize"
     :update-prop="ctx.updateProp"
     :commit-prop="ctx.commitProp"
     :on-align-change="onAlignChange"

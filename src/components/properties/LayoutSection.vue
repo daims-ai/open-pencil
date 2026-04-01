@@ -90,7 +90,9 @@ const { panels } = useI18n()
                 "
                 @click="ctx.editor.setLayoutMode(ctx.node.id, dir.mode)"
               >
-                <component :is="`icon-lucide-${dir.icon}`" class="size-3.5" />
+                <icon-lucide-arrow-right v-if="dir.mode === 'HORIZONTAL'" class="size-3.5" />
+                <icon-lucide-arrow-down v-else-if="dir.mode === 'VERTICAL'" class="size-3.5" />
+                <icon-lucide-layout-grid v-else class="size-3.5" />
               </button>
               <button
                 v-if="ctx.isFlex"

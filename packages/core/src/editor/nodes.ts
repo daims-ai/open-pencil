@@ -3,24 +3,85 @@ import { computeLayout } from '../layout'
 import type { LayoutMode, SceneNode } from '../scene-graph'
 import type { EditorContext } from './types'
 
+const TEXT_RESIZE_PROPS = new Set([
+  'text',
+  'fontSize',
+  'fontFamily',
+  'fontWeight',
+  'italic',
+  'lineHeight',
+  'letterSpacing',
+  'textAutoResize'
+])
+
 export function createNodeActions(ctx: EditorContext) {
+  function resizeTextNode(id: string) {
+    const node = ctx.graph.getNode(id)
+    if (node?.type !== 'TEXT') return
+
+    const renderer = ctx.getRenderer()
+    if (!renderer) return
+
+    const autoResize = node.textAutoResize
+    if (autoResize === 'NONE') return
+
+    if (autoResize === 'WIDTH_AND_HEIGHT') {
+      const measured = renderer.measureTextNode(node)
+      if (measured) {
+        ctx.graph.updateNode(id, {
+          width: Math.max(1, measured.width),
+          height: Math.max(1, measured.height)
+        })
+      }
+    } else if (autoResize === 'HEIGHT') {
+      const measured = renderer.measureTextNode(node, node.width)
+      if (measured) {
+        ctx.graph.updateNode(id, {
+          height: Math.max(1, measured.height)
+        })
+      }
+    }
+  }
+
   function updateNode(id: string, changes: Partial<SceneNode>) {
     ctx.graph.updateNode(id, changes)
+
+    const node = ctx.graph.getNode(id)
+    if (node?.type === 'TEXT' && Object.keys(changes).some((k) => TEXT_RESIZE_PROPS.has(k))) {
+      resizeTextNode(id)
+    }
+
     ctx.runLayoutForNode(id)
   }
 
   function updateNodeWithUndo(id: string, changes: Partial<SceneNode>, label = 'Update') {
     const node = ctx.graph.getNode(id)
     if (!node) return
+
+    const isTextResizeChange =
+      node.type === 'TEXT' && Object.keys(changes).some((k) => TEXT_RESIZE_PROPS.has(k))
     const previous = Object.fromEntries(
       (Object.keys(changes) as (keyof SceneNode)[]).map((key) => [key, node[key]])
     ) as Partial<SceneNode>
+
+    if (isTextResizeChange) {
+      previous.width = node.width
+      previous.height = node.height
+    }
+
     ctx.graph.updateNode(id, changes)
+    if (isTextResizeChange) resizeTextNode(id)
     ctx.runLayoutForNode(id)
+
+    const updated = ctx.graph.getNode(id)
+    const finalSize =
+      isTextResizeChange && updated ? { width: updated.width, height: updated.height } : null
+
     ctx.undo.push({
       label,
       forward: () => {
         ctx.graph.updateNode(id, changes)
+        if (finalSize) ctx.graph.updateNode(id, finalSize)
         ctx.runLayoutForNode(id)
       },
       inverse: () => {
@@ -157,5 +218,5 @@ export function createNodeActions(ctx: EditorContext) {
     ctx.requestRender()
   }
 
-  return { updateNode, updateNodeWithUndo, setLayoutMode, bindVariable, unbindVariable }
+  return { updateNode, updateNodeWithUndo, setLayoutMode, bindVariable, unbindVariable, resizeTextNode }
 }
