@@ -93,7 +93,7 @@ function commitEdit(e: Event) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.code === 'Enter') {
+  if (e.code === 'Enter' || e.code === 'NumpadEnter') {
     commitEdit(e)
   } else if (e.code === 'Escape') {
     editing.value = false
