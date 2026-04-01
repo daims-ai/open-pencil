@@ -169,7 +169,12 @@ export const panelMessages = i18n('panels', {
   sizingHug: 'Hug',
   sizingFill: 'Fill',
   sizingFillFr: 'Fill (fr)',
-  sizingFixedPx: 'Fixed (px)'
+  sizingFixedPx: 'Fixed (px)',
+  autoResize: 'Auto resize',
+  autoResizeNone: 'None',
+  autoResizeHeight: 'Height',
+  autoResizeWidthAndHeight: 'Width and height',
+  autoResizeTruncate: 'Truncate'
 })
 
 export const pageMessages = i18n('pages', {

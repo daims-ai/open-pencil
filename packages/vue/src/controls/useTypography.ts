@@ -15,6 +15,13 @@ const WEIGHTS = Object.entries(FONT_WEIGHT_NAMES).map(([value, label]) => ({
   label
 }))
 
+const TEXT_AUTO_RESIZE_OPTIONS = [
+  { value: 'NONE', label: 'None' },
+  { value: 'HEIGHT', label: 'Height' },
+  { value: 'WIDTH_AND_HEIGHT', label: 'Width and height' },
+  { value: 'TRUNCATE', label: 'Truncate' }
+] as const
+
 /**
  * Options for {@link useTypography}.
  */
@@ -43,6 +50,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
   const fontFamily = computed(() => node.value?.fontFamily ?? '')
   const fontWeight = computed(() => node.value?.fontWeight ?? 400)
   const fontSize = computed(() => node.value?.fontSize ?? 16)
+  const textAutoResize = computed(() => (node.value?.textAutoResize ?? 'NONE') as string)
 
   const currentWeightLabel = computed(
     () => FONT_WEIGHT_NAMES[node.value?.fontWeight ?? 400] ?? 'Regular'
@@ -88,6 +96,11 @@ export function useTypography(options: UseTypographyOptions = {}) {
   function setDirection(direction: TextDirection) {
     if (!node.value) return
     editor.updateNodeWithUndo(node.value.id, { textDirection: direction }, 'Change text direction')
+  }
+
+  function setAutoResize(mode: (typeof TEXT_AUTO_RESIZE_OPTIONS)[number]['value']) {
+    if (!node.value) return
+    editor.updateNodeWithUndo(node.value.id, { textAutoResize: mode }, 'Change text auto resize')
   }
 
   function toggleBold() {
@@ -143,6 +156,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
     fontFamily,
     fontWeight,
     fontSize,
+    textAutoResize,
     weights: WEIGHTS,
     currentWeightLabel,
     activeFormatting,
@@ -152,6 +166,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
     setWeight,
     setAlign,
     setDirection,
+    setAutoResize,
     toggleBold,
     toggleItalic,
     toggleDecoration,
