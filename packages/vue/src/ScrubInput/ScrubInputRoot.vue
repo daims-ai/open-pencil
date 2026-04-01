@@ -93,8 +93,13 @@ function commitEdit(e: Event) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.code === 'Enter') commitEdit(e)
-  else if (e.code === 'Escape') editing.value = false
+  if (e.code === 'Enter') {
+    commitEdit(e)
+  } else if (e.code === 'Escape') {
+    editing.value = false
+  }
+  // 편집 중에는 모든 키 이벤트 전파를 막아 전역 단축키 (백스페이스로 삭제 등) 가 작동하지 않도록 함
+  e.stopPropagation()
 }
 
 const ctx = {
