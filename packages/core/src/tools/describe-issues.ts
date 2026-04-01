@@ -256,22 +256,22 @@ function checkFlexContainerWithoutAlignment(
 }
 
 function detectVisibilityIssues(node: SceneNode, graph: SceneGraph, issues: DescribeIssue[]): void {
-  for (const fill of node.fills) {
-    if (!fill.visible || fill.type !== 'SOLID') continue
-    if (fill.opacity < MIN_FILL_OPACITY) {
-      issues.push({
-        message: `Near-invisible fill ${colorToHex(fill.color)} at ${Math.round(fill.opacity * 100)}%`,
-        suggestion: `Increase to ≥${Math.round(MIN_FILL_OPACITY * 100)}%`
-      })
-    }
-  }
-  for (const stroke of node.strokes) {
-    if (!stroke.visible || stroke.opacity >= MIN_STROKE_OPACITY) continue
-    issues.push({
-      message: `Near-invisible stroke at ${Math.round(stroke.opacity * 100)}%`,
-      suggestion: `Increase to ≥${Math.round(MIN_STROKE_OPACITY * 100)}%`
-    })
-  }
+  // for (const fill of node.fills) {
+  //   if (!fill.visible || fill.type !== 'SOLID') continue
+  //   if (fill.opacity < MIN_FILL_OPACITY) {
+  //     issues.push({
+  //       message: `Near-invisible fill ${colorToHex(fill.color)} at ${Math.round(fill.opacity * 100)}%`,
+  //       suggestion: `Increase to ≥${Math.round(MIN_FILL_OPACITY * 100)}%`
+  //     })
+  //   }
+  // }
+  // for (const stroke of node.strokes) {
+  //   if (!stroke.visible || stroke.opacity >= MIN_STROKE_OPACITY) continue
+  //   issues.push({
+  //     message: `Near-invisible stroke at ${Math.round(stroke.opacity * 100)}%`,
+  //     suggestion: `Increase to ≥${Math.round(MIN_STROKE_OPACITY * 100)}%`
+  //   })
+  // }
   if (node.type !== 'TEXT' || !node.parentId) return
   const textFill = node.fills.find((f) => f.visible && f.type === 'SOLID')
   if (!textFill) return
