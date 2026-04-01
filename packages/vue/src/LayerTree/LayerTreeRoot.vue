@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, useAttrs, watch } from 'vue'
 
 import { useEditor } from '@open-pencil/vue/context/editorContext'
 import { provideLayerTree } from './context'
 
 import type { LayerNode } from './context'
 
+defineOptions({ inheritAttrs: false })
+
 const { indentPerLevel = 16 } = defineProps<{
   indentPerLevel?: number
 }>()
+
+const $attrs = useAttrs()
 
 const emit = defineEmits<{
   select: [id: string, additive: boolean]
@@ -132,6 +136,7 @@ provideLayerTree({
 
 <template>
   <slot
+    v-bind="$attrs"
     :items="items"
     :expanded="expanded"
     :tree-key="treeKey"
