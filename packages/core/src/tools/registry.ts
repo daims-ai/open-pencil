@@ -8,6 +8,7 @@ import {
   evalCode
 } from './analyze'
 import { calc } from './calc'
+import { measureTextLayout } from './measure-text-layout'
 import { designToTokens, designToComponentMap } from './codegen'
 import {
   createShape,
@@ -151,7 +152,9 @@ export const CORE_TOOLS: ToolDef[] = [
   viewportZoomToFit,
   // DAIMS
   searchPrompts,
-  getPrompt
+  getPrompt,
+  // Text measurement
+  measureTextLayout,
 ]
 
 /**
@@ -253,5 +256,7 @@ export const ALL_TOOLS: ToolDef[] = [
   ...EXTENDED_TOOLS,
   searchPrompts,
   getPrompt,
-  searchAndApplyPrompt
+  searchAndApplyPrompt,
+  // Text measurement
+  measureTextLayout,
 ]
