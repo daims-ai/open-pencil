@@ -83,33 +83,34 @@ const { panels } = useI18n()
         </ScrubInput>
       </div>
 
-      <div class="mb-1.5">
-        <label class="mb-1 block text-[11px] text-muted">{{ panels.direction }}</label>
-        <AppSelect
-          :model-value="ctx.node.value.textDirection"
-          :options="[
-            { value: 'AUTO', label: panels.auto },
-            { value: 'LTR', label: 'LTR' },
-            { value: 'RTL', label: 'RTL' }
-          ]"
-          @update:model-value="ctx.setDirection($event as 'AUTO' | 'LTR' | 'RTL')"
-        />
-      </div>
-
-      <div v-if="ctx.isInAutoLayout.value" class="mb-1.5">
-        <label class="mb-1 block text-[11px] text-muted">{{ panels.autoResize }}</label>
-        <AppSelect
-          v-model="ctx.textAutoResize.value"
-          :options="[
-            { value: 'NONE' as string, label: panels.autoResizeNone },
-            { value: 'HEIGHT' as string, label: panels.autoResizeHeight },
-            { value: 'WIDTH_AND_HEIGHT' as string, label: panels.autoResizeWidthAndHeight },
-            { value: 'TRUNCATE' as string, label: panels.autoResizeTruncate }
-          ]"
-          @update:model-value="
-            ctx.setAutoResize($event as 'NONE' | 'HEIGHT' | 'WIDTH_AND_HEIGHT' | 'TRUNCATE')
-          "
-        />
+      <div v-if="ctx.isInAutoLayout.value" class="mb-1.5 flex gap-1.5">
+        <div class="flex-1">
+          <label class="mb-1 block text-[11px] text-muted">{{ panels.direction }}</label>
+          <AppSelect
+            :model-value="ctx.node.value.textDirection"
+            :options="[
+              { value: 'AUTO', label: panels.auto },
+              { value: 'LTR', label: 'LTR' },
+              { value: 'RTL', label: 'RTL' }
+            ]"
+            @update:model-value="ctx.setDirection($event as 'AUTO' | 'LTR' | 'RTL')"
+          />
+        </div>
+        <div class="flex-1">
+          <label class="mb-1 block text-[11px] text-muted">{{ panels.autoResize }}</label>
+          <AppSelect
+            v-model="ctx.textAutoResize.value"
+            :options="[
+              { value: 'NONE' as string, label: panels.autoResizeNone },
+              { value: 'HEIGHT' as string, label: panels.autoResizeHeight },
+              { value: 'WIDTH_AND_HEIGHT' as string, label: panels.autoResizeWidthAndHeight },
+              { value: 'TRUNCATE' as string, label: panels.autoResizeTruncate }
+            ]"
+            @update:model-value="
+              ctx.setAutoResize($event as 'NONE' | 'HEIGHT' | 'WIDTH_AND_HEIGHT' | 'TRUNCATE')
+            "
+          />
+        </div>
       </div>
 
       <div class="flex items-center gap-3">
