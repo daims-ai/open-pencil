@@ -14,6 +14,8 @@ import {
   makeCanvasNodeChange
 } from '@open-pencil/core/kiwi/serialize'
 
+import { computeImageHash } from '@open-pencil/core/figma-api'
+
 import type { NodeChange } from '@open-pencil/core/kiwi/codec'
 import type { SkiaRenderer } from '@open-pencil/core/renderer'
 import type { SceneGraph, VariableValue } from '@open-pencil/core/scene-graph'
@@ -60,10 +62,13 @@ function variableValueToKiwi(
   return { value: { floatValue: Number(value) }, dataType: 'FLOAT', resolvedDataType: 'FLOAT' }
 }
 
+const MAX_IMAGE_HASH_LENGTH = 40
+
 function collectImageEntries(graph: SceneGraph): Array<{ name: string; data: Uint8Array }> {
   const entries: Array<{ name: string; data: Uint8Array }> = []
   for (const [hash, data] of graph.images) {
-    entries.push({ name: `images/${hash}`, data })
+    const normalizedHash = hash.length > MAX_IMAGE_HASH_LENGTH ? computeImageHash(data) : hash
+    entries.push({ name: `images/${normalizedHash}`, data })
   }
   return entries
 }
