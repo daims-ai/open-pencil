@@ -5,6 +5,7 @@ import { TooltipProvider } from 'reka-ui'
 
 import { provideEditor } from '@open-pencil/vue'
 import AppToast from '@/components/AppToast.vue'
+import { postMessageToParent } from '@/bridge/electron-bridge'
 import { useEditorStore } from '@/stores/editor'
 import { toast } from '@/utils/toast'
 
@@ -15,6 +16,7 @@ provideEditor(store)
 
 onMounted(() => {
   toast.setupGlobalErrorHandler()
+  postMessageToParent('open-pencil:ready', {})
 })
 </script>
 
