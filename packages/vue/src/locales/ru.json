@@ -137,6 +137,7 @@
     "alignMiddle": "По середине",
     "alignBottom": "По нижнему краю",
     "clipContent": "Обрезать содержимое",
+    "colorFormatHex": "HEX",
     "colorFormatRgb": "RGB",
     "colorFormatHsl": "HSL",
     "colorFormatHsb": "HSB",

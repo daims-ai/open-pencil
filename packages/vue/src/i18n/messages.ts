@@ -150,6 +150,7 @@ export const panelMessages = i18n('panels', {
   alignCenter: 'Align center',
   alignMiddle: 'Align middle',
   clipContent: 'Clip content',
+  colorFormatHex: 'HEX',
   colorFormatRgb: 'RGB',
   colorFormatHsl: 'HSL',
   colorFormatHsb: 'HSB',

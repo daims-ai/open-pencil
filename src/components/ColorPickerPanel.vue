@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ColorAreaRoot, ColorAreaArea, ColorAreaThumb } from 'reka-ui'
 
 import type { Color } from '@open-pencil/core'
-import { colorToCSS } from '@open-pencil/core'
+import { colorToCSS, colorToHex, parseColor } from '@open-pencil/core'
 import type { OkHCLControls } from '@open-pencil/vue/ColorPicker/types'
 import {
   createColorPickerModel,
@@ -48,15 +48,18 @@ const okhclSliderPreview = computed(() =>
 const okhclSliderGradient = computed(() =>
   okhcl?.okhcl ? createOkHCLSliderGradientModel(okhcl.okhcl) : null
 )
-const fieldOptions = computed(
-  () =>
-    okhcl?.fieldOptions ?? [
-      { value: 'rgb', label: panels.value.colorFormatRgb },
-      { value: 'hsl', label: panels.value.colorFormatHsl },
-      { value: 'hsb', label: panels.value.colorFormatHsb }
-    ]
-)
-const fieldFormat = computed(() => okhcl?.fieldFormat ?? 'rgb')
+const hexColor = computed(() => colorToHex(color))
+const hexOption = computed(() => ({ value: 'hex' as const, label: panels.value.colorFormatHex }))
+const fieldOptions = computed(() => {
+  const base = okhcl?.fieldOptions ?? [
+    { value: 'rgb' as const, label: panels.value.colorFormatRgb },
+    { value: 'hsl' as const, label: panels.value.colorFormatHsl },
+    { value: 'hsb' as const, label: panels.value.colorFormatHsb }
+  ]
+  return [hexOption.value, ...base]
+})
+const localFieldFormat = ref<'hex' | 'rgb' | 'hsl' | 'hsb'>('hex')
+const fieldFormat = computed(() => okhcl?.fieldFormat ?? localFieldFormat.value)
 const isOkHCLFormat = computed(() => fieldFormat.value === 'okhcl' && okhcl)
 
 function onRekaColorUpdate(colorValue: ReturnType<typeof createColorPickerModel>['rekaColor']) {
@@ -64,7 +67,11 @@ function onRekaColorUpdate(colorValue: ReturnType<typeof createColorPickerModel>
 }
 
 function setFieldFormat(value: string) {
-  okhcl?.setFieldFormat(value as NonNullable<OkHCLControls>['fieldFormat'])
+  if (okhcl) {
+    okhcl.setFieldFormat(value as NonNullable<OkHCLControls>['fieldFormat'])
+  } else {
+    localFieldFormat.value = value as typeof localFieldFormat.value
+  }
 }
 
 function updateRGBAHue(value: number) {
@@ -85,6 +92,11 @@ function updateHSLChannelValue(channel: 'h' | 's' | 'l', value: number) {
 
 function updateHSBChannelValue(channel: 'h' | 's' | 'b', value: number) {
   emit('update', updateHSBChannel(pickerModel.value, channel, value))
+}
+
+function updateHexColor(hex: string) {
+  const parsed = parseColor(hex)
+  emit('update', { ...parsed, a: color.a })
 }
 
 function updateOkHCLChannel(channel: 'h' | 'c' | 'l' | 'a', value: number) {
@@ -152,7 +164,19 @@ function updateOkHCLChannel(channel: 'h' | 'c' | 'l' | 'a', value: number) {
 
       <div class="min-w-0 flex flex-col gap-2">
         <div
-          v-if="fieldFormat === 'rgb'"
+          v-if="fieldFormat === 'hex'"
+          class="overflow-hidden rounded border border-border bg-border"
+        >
+          <input
+            type="text"
+            class="w-full bg-input px-2 py-1 text-xs text-surface outline-none"
+            :value="hexColor"
+            @change="updateHexColor(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+
+        <div
+          v-else-if="fieldFormat === 'rgb'"
           class="grid grid-cols-[repeat(3,minmax(0,1fr))] gap-px overflow-hidden rounded border border-border bg-border"
         >
           <input

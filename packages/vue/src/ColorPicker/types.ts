@@ -1,6 +1,6 @@
 import type { OkHCLColor, RenderColorSpace } from '@open-pencil/core'
 
-export type ColorFieldFormat = 'rgb' | 'hsl' | 'hsb' | 'okhcl'
+export type ColorFieldFormat = 'hex' | 'rgb' | 'hsl' | 'hsb' | 'okhcl'
 
 export interface ColorFieldOption {
   value: ColorFieldFormat

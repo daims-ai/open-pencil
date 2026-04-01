@@ -1,4 +1,4 @@
-import { useEventListener, useMagicKeys, whenever } from '@vueuse/core'
+import { useActiveElement, useEventListener, useMagicKeys, whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useAIChat } from '@/composables/use-chat'
@@ -61,6 +61,7 @@ export function useKeyboard() {
   const store = useEditorStore()
   const { isMobile } = useViewportKind()
   const { runCommand } = useEditorCommands()
+  const activeElement = useActiveElement()
 
   useEventListener(window, 'copy', (e: ClipboardEvent) => {
     if (isEditing(e)) return
@@ -234,7 +235,9 @@ export function useKeyboard() {
         !keys['control'].value &&
         !keys['shift'].value &&
         (allowAlt || !keys['alt'].value) &&
-        !store.state.editingTextId
+        !store.state.editingTextId &&
+        !(activeElement.value instanceof HTMLInputElement) &&
+        !(activeElement.value instanceof HTMLTextAreaElement)
     )
   }
 
