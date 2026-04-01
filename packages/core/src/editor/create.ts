@@ -237,6 +237,9 @@ export function createEditor(options?: EditorOptions) {
     replaceGraph,
     subscribeToGraph,
 
+    // Layout
+    runLayoutForNode,
+
     // Selection
     ...selection,
 

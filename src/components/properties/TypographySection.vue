@@ -96,7 +96,7 @@ const { panels } = useI18n()
         />
       </div>
 
-      <div class="mb-1.5">
+      <div v-if="ctx.isInAutoLayout.value" class="mb-1.5">
         <label class="mb-1 block text-[11px] text-muted">{{ panels.autoResize }}</label>
         <AppSelect
           v-model="ctx.textAutoResize.value"

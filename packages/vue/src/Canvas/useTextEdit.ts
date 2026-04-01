@@ -47,6 +47,7 @@ export function useTextEdit(canvasRef: Ref<HTMLCanvasElement | null>, store: Edi
     const changes: Partial<SceneNode> = { text }
     if (runs !== undefined) changes.styleRuns = runs
     store.graph.updateNode(nodeId, changes)
+    store.runLayoutForNode(nodeId)
     store.requestRender()
   }
 

@@ -26,6 +26,7 @@ function onFormattingChange(val: AcceptableValue | AcceptableValue[]) {
     :has-missing-fonts="ctx.hasMissingFonts"
     :active-formatting="ctx.activeFormatting"
     :text-auto-resize="ctx.textAutoResize"
+    :is-in-auto-layout="ctx.isInAutoLayout"
     :set-family="ctx.setFamily"
     :set-weight="ctx.setWeight"
     :set-direction="ctx.setDirection"

@@ -52,6 +52,13 @@ export function useTypography(options: UseTypographyOptions = {}) {
   const fontSize = computed(() => node.value?.fontSize ?? 16)
   const textAutoResize = computed(() => (node.value?.textAutoResize ?? 'NONE') as string)
 
+  const isInAutoLayout = computed(() => {
+    const n = node.value
+    if (!n || !n.parentId) return false
+    const parent = editor.getNode(n.parentId)
+    return parent?.layoutMode === 'HORIZONTAL' || parent?.layoutMode === 'VERTICAL'
+  })
+
   const currentWeightLabel = computed(
     () => FONT_WEIGHT_NAMES[node.value?.fontWeight ?? 400] ?? 'Regular'
   )
@@ -157,6 +164,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
     fontWeight,
     fontSize,
     textAutoResize,
+    isInAutoLayout,
     weights: WEIGHTS,
     currentWeightLabel,
     activeFormatting,

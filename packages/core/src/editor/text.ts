@@ -30,15 +30,18 @@ export function createTextActions(ctx: EditorContext) {
     const prevText = node?.text ?? ''
     const newText = result.text
     ctx.graph.updateNode(result.nodeId, { text: newText })
+    ctx.runLayoutForNode(result.nodeId)
     ctx.state.editingTextId = null
     if (prevText !== newText) {
       ctx.undo.push({
         label: 'Edit text',
         forward: () => {
           ctx.graph.updateNode(result.nodeId, { text: newText })
+          ctx.runLayoutForNode(result.nodeId)
         },
         inverse: () => {
           ctx.graph.updateNode(result.nodeId, { text: prevText })
+          ctx.runLayoutForNode(result.nodeId)
         }
       })
     }
