@@ -1,3 +1,35 @@
+// Polyfill for environments without native Uint8Array base64 methods (e.g. older browsers, iframes)
+if (typeof Uint8Array.fromBase64 !== 'function') {
+  ; (Uint8Array as unknown as { fromBase64: (b: string) => Uint8Array }).fromBase64 = function (
+    base64: string
+  ): Uint8Array {
+    const binaryString = atob(base64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes
+  }
+}
+if (typeof Uint8Array.prototype.toBase64 !== 'function') {
+  const CHUNK_SIZE = 0x8000
+  Object.defineProperty(Uint8Array.prototype, 'toBase64', {
+    value: function (this: Uint8Array): string {
+      if (typeof Buffer !== 'undefined') {
+        return Buffer.from(this).toString('base64')
+      }
+      let binary = ''
+      for (let i = 0; i < this.length; i += CHUNK_SIZE) {
+        const chunk = this.subarray(i, i + CHUNK_SIZE)
+        binary += String.fromCharCode.apply(null, chunk as unknown as number[])
+      }
+      return btoa(binary)
+    },
+    writable: true,
+    configurable: true
+  })
+}
+
 export type { GUID, Color, Vector, Matrix, Rect } from './types'
 export {
   computeBounds,
