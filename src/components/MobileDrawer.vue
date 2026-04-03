@@ -5,6 +5,7 @@ import { motion } from 'motion-v'
 import type { PanInfo } from 'motion-v'
 import { computed, ref } from 'vue'
 
+import AgentPanel from './AgentPanel.vue'
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
@@ -21,7 +22,7 @@ import {
 import { useEditorStore } from '@/stores/editor'
 
 type Snap = 'closed' | 'half' | 'full'
-type DrawerTab = 'layers' | 'design' | 'code' | 'ai'
+type DrawerTab = 'layers' | 'design' | 'code' | 'ai' | 'agent'
 
 const store = useEditorStore()
 
@@ -39,12 +40,12 @@ const snap = computed({
 
 function getDrawerTab(): DrawerTab {
   if (store.state.activeRibbonTab === 'code') return 'code'
-  if (store.state.activeRibbonTab === 'ai') return 'ai'
+  if (store.state.activeRibbonTab === 'agent') return 'agent'
   return store.state.panelMode === 'design' ? 'design' : 'layers'
 }
 
 function setDrawerTab(tab: DrawerTab) {
-  if (tab === 'code' || tab === 'ai') {
+  if (tab === 'code' || tab === 'ai' || tab === 'agent') {
     store.state.activeRibbonTab = tab
     return
   }
@@ -161,6 +162,15 @@ const drawerTransition = {
           >
             <icon-lucide-sparkles class="size-4" />
           </TabsTrigger>
+
+          <TabsTrigger
+            data-test-id="mobile-ribbon-agent"
+            value="agent"
+            class="flex h-full cursor-pointer items-center justify-center px-3 transition-colors outline-none select-none data-[state=active]:text-accent"
+            @click="toggleTab('agent')"
+          >
+            <icon-lucide-bot class="size-4" />
+          </TabsTrigger>
         </TabsList>
       </nav>
 
@@ -191,6 +201,12 @@ const drawerTransition = {
         <TabsContent value="ai" class="mt-0 h-full data-[state=inactive]:hidden">
           <div data-test-id="mobile-drawer-ai" class="flex h-full flex-col">
             <ChatPanel />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="agent" class="mt-0 h-full data-[state=inactive]:hidden">
+          <div data-test-id="mobile-drawer-agent" class="flex h-full flex-col">
+            <AgentPanel />
           </div>
         </TabsContent>
       </div>

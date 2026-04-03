@@ -1,7 +1,6 @@
 import { useActiveElement, useEventListener, useMagicKeys, whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { useAIChat } from '@/composables/use-chat'
 import { TOOL_SHORTCUTS, useEditorStore } from '@/stores/editor'
 import { closeTab, createTab, activeTab as activeTabRef } from '@/stores/tabs'
 import {
@@ -57,7 +56,6 @@ function shouldPreventDefault(e: KeyboardEvent, hasPenState: boolean): boolean {
 }
 
 export function useKeyboard() {
-  const { activeTab } = useAIChat()
   const store = useEditorStore()
   const { isMobile } = useViewportKind()
   const { runCommand } = useEditorCommands()
@@ -185,7 +183,7 @@ export function useKeyboard() {
         store.state.mobileDrawerSnap = 'half'
       }
     } else {
-      activeTab.value = activeTab.value === 'ai' ? 'design' : 'ai'
+      store.state.activeRibbonTab = store.state.activeRibbonTab === 'ai' ? 'panels' : 'ai'
     }
   })
   whenever(mod('keyw'), () => {

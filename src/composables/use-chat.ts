@@ -5,12 +5,12 @@ import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { useLocalStorage } from '@vueuse/core'
 import { DirectChatTransport, stepCountIs, ToolLoopAgent } from 'ai'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
 import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
 import { useElectronBridge, type OpenPencilConfig } from '@/bridge/electron-bridge'
-import { getActiveEditorStore, useEditorStore } from '@/stores/editor'
+import { getActiveEditorStore } from '@/stores/editor'
 import {
   ACP_AGENTS,
   AI_PROVIDERS,
@@ -62,7 +62,6 @@ const customAPIType = useLocalStorage<'completions' | 'responses'>(
 const maxOutputTokens = useLocalStorage(`${STORAGE_PREFIX}ai-max-output-tokens`, 16384)
 const pexelsApiKey = useLocalStorage(`${STORAGE_PREFIX}pexels-api-key`, '')
 const unsplashAccessKey = useLocalStorage(`${STORAGE_PREFIX}unsplash-access-key`, '')
-const activeTab = ref<'design' | 'code' | 'ai'>('design')
 
 const providerDef = computed(
   () => AI_PROVIDERS.find((p) => p.id === providerID.value) ?? AI_PROVIDERS[0]
@@ -81,12 +80,21 @@ const isConfigured = computed(() => {
 
 let transportDirty = false
 let currentChatStore: ReturnType<typeof getActiveEditorStore> | null = null
-let currentChatMessages = new WeakMap<ReturnType<typeof getActiveEditorStore>, UIMessage[]>()
+let currentChatTab: 'ai' | 'agent' | null = null
+const chatMessages = new Map<string, UIMessage[]>()
+
+function getChatMessageKey(
+  store: ReturnType<typeof getActiveEditorStore>,
+  tab: 'ai' | 'agent'
+): string {
+  return `${store.state.currentPageId}:${tab}`
+}
 
 function markTransportDirty() {
   transportDirty = true
   currentChatStore = null
-  currentChatMessages = new WeakMap()
+  currentChatTab = null
+  chatMessages.clear()
 }
 
 watch(
@@ -137,7 +145,6 @@ async function initElectronConfig() {
   try {
     const config = await waitForExternalConfig()
     applyExternalConfig(config)
-    activeTab.value = 'ai'
     setAPIKey(config.apiKey)
   } catch (e) {
     console.error('[use-chat] Failed to get external config:', e)
@@ -289,31 +296,52 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
   return new DirectChatTransport({ agent })
 }
 
-async function ensureChat(): Promise<Chat<UIMessage> | null> {
+async function ensureChat(tab: 'ai' | 'agent'): Promise<Chat<UIMessage> | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
-  if (currentChatStore && chat) {
-    currentChatMessages.set(currentChatStore, chat.messages)
+  const messageKey = getChatMessageKey(store, tab)
+
+  if (currentChatStore && chat && currentChatTab) {
+    const oldKey = getChatMessageKey(currentChatStore, currentChatTab)
+    chatMessages.set(oldKey, chat.messages)
   }
 
-  if (!chat || transportDirty || currentChatStore !== store) {
-    const messages = currentChatMessages.get(store)
+  const needsNewChat =
+    !chat || transportDirty || currentChatStore !== store || currentChatTab !== tab
+
+  if (needsNewChat) {
+    const messages = chatMessages.get(messageKey) ?? []
     const transport = isACPProvider.value ? await createACPTransport() : createTransport(store)
     chat = new Chat<UIMessage>({ transport, messages })
     currentChatStore = store
+    currentChatTab = tab
     transportDirty = false
   }
   return chat
 }
 
 function resetChat() {
-  if (currentChatStore) {
-    currentChatMessages.delete(currentChatStore)
+  if (currentChatStore && currentChatTab) {
+    const key = getChatMessageKey(currentChatStore, currentChatTab)
+    chatMessages.delete(key)
   }
   chat = null
   currentChatStore = null
+  currentChatTab = null
   transportDirty = false
+}
+
+function resetTabChat(tab: 'ai' | 'agent') {
+  if (currentChatStore) {
+    const key = getChatMessageKey(currentChatStore, tab)
+    chatMessages.delete(key)
+  }
+  if (currentChatTab === tab) {
+    chat = null
+    currentChatTab = null
+  }
+  transportDirty = true
 }
 
 if (IS_BROWSER) {
@@ -339,9 +367,10 @@ export function useAIChat() {
     maxOutputTokens,
     pexelsApiKey,
     unsplashAccessKey,
-    activeTab,
     isConfigured,
     ensureChat,
     resetChat
   }
 }
+
+export { resetTabChat }

@@ -23,9 +23,9 @@ const { dialogs } = useI18n()
 
 const chat = ref<Chat<UIMessage> | null>(null)
 
-// Only initialize chat when on the AI tab
-if (activeTab.value?.id === 'ai') {
-  ensureChat('ai').then((c) => {
+// Only initialize chat when on the Agent tab
+if (activeTab.value?.id === 'agent') {
+  ensureChat('agent').then((c) => {
     if (c) chat.value = markRaw(c)
   })
 }
@@ -69,8 +69,8 @@ watch(messages, scrollToBottom, { deep: true })
 watch(
   () => activeTab.value?.id,
   (newTabId) => {
-    if (newTabId === 'ai') {
-      ensureChat('ai').then((c) => {
+    if (newTabId === 'agent') {
+      ensureChat('agent').then((c) => {
         if (c) chat.value = markRaw(c)
       })
     }
@@ -81,7 +81,7 @@ async function handleSubmit(text: string) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
     initError.value = null
-    const c = await ensureChat('ai')
+    const c = await ensureChat('agent')
     if (c) chat.value = markRaw(c)
   } catch (e) {
     console.error('Failed to initialize chat:', e)
@@ -117,14 +117,14 @@ async function handleCopyAcpLog() {
 
 function handleClearChat() {
   chat.value = null
-  resetTabChat('ai')
+  resetTabChat('agent')
   clearToolLogEntries()
   clearAcpDebugLog()
 }
 </script>
 
 <template>
-  <div data-test-id="chat-panel" class="flex min-w-0 flex-1 flex-col overflow-hidden select-text">
+  <div data-test-id="agent-panel" class="flex min-w-0 flex-1 flex-col overflow-hidden select-text">
     <ProviderSetup v-if="!isConfigured" />
 
     <template v-else>
@@ -133,23 +133,23 @@ function handleClearChat() {
           <!-- Empty state -->
           <div
             v-if="messages.length === 0"
-            data-test-id="chat-empty-state"
+            data-test-id="agent-empty-state"
             class="flex h-full flex-col items-center justify-center gap-3 text-muted"
           >
-            <icon-lucide-message-circle class="size-8 opacity-50" />
+            <icon-lucide-bot class="size-8 opacity-50" />
             <p class="text-center text-xs">{{ dialogs.describeCreateOrChange }}</p>
           </div>
 
           <!-- Messages -->
-          <div v-else data-test-id="chat-messages" class="flex flex-col gap-3">
+          <div v-else data-test-id="agent-messages" class="flex flex-col gap-3">
             <ChatMessage v-for="msg in messages" :key="msg.id" :message="msg" />
 
             <!-- Thinking indicator: shown when AI is working but no visible activity -->
-            <div v-if="isThinking" data-test-id="chat-typing-indicator" class="flex gap-2">
+            <div v-if="isThinking" data-test-id="agent-typing-indicator" class="flex gap-2">
               <div
                 class="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted/20 text-[10px] font-bold text-muted"
               >
-                AI
+                AGENT
               </div>
               <div class="flex items-center gap-1 py-2">
                 <span
