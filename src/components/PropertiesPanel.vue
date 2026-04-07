@@ -8,6 +8,7 @@ import AgentPanel from './AgentPanel.vue'
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
+import WorkflowPanel from './WorkflowPanel.vue'
 import ZoomDropdown from './ZoomDropdown.vue'
 
 const store = useEditorStore()
@@ -74,6 +75,19 @@ const { panels } = useI18n()
           <icon-lucide-bot class="size-3" />
           Agent
         </TabsTrigger>
+        <TabsTrigger
+          value="workflow"
+          data-test-id="properties-tab-workflow"
+          class="flex items-center gap-1 rounded px-2.5 py-1 text-xs text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
+          @click="
+            () => {
+              store.state.activeRibbonTab = 'workflow'
+            }
+          "
+        >
+          <icon-lucide-workflow class="size-3" />
+          Workflow
+        </TabsTrigger>
         <ZoomDropdown
           v-if="store.state.activeRibbonTab === 'panels' && store.state.panelMode === 'design'"
         />
@@ -113,6 +127,15 @@ const { panels } = useI18n()
         :hidden="store.state.activeRibbonTab !== 'agent'"
       >
         <AgentPanel />
+      </TabsContent>
+
+      <TabsContent
+        value="workflow"
+        class="flex min-h-0 flex-1 flex-col"
+        :force-mount="true"
+        :hidden="store.state.activeRibbonTab !== 'workflow'"
+      >
+        <WorkflowPanel />
       </TabsContent>
     </TabsRoot>
   </aside>

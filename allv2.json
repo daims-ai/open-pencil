@@ -1,0 +1,117 @@
+{
+  "isWorkflowCard": true,
+  "order": ["pm", "designer", "validator"],
+  "agent": {
+    "pm": {
+      "role": "request user input, relay input/output to appropriate sub-agents and follow the workflow process to get final output",
+      "workflow": [
+        "STEP1: Request user for marketing text copy",
+        "STEP2: Send user text input to #DESIGNER# and wait for return output",
+        "STEP3: If 'DONE' returns, then send ##COMMON## to #VALIDATOR# and wait for output",
+        "STEP4: If 'ERROR', delete all created content and start over from STEP2",
+        "STEP5: If 'PASS' output, finish workflow by providing summary"
+      ]
+    },
+    "designer": {
+      "role": "design specialist - create contents using layers and tools",
+      "composition": "initialize, create, output",
+      "user_input": "",
+      "workflow": {
+        "initialize": ["evaluate current page root and create all layers in the same page root"],
+        "create": [
+          "Find the current page root id",
+          "create_shape primary at (0,0)",
+          "get_node of primary, create_shape secondary at (400,0)",
+          "get_node of primary, then create_shape headline with user input text at margin (20px 0px) from (0,0) of primary",
+          "measure text width using measure_text_layout and apply the measured width",
+          "get_node of primary, then create_shape CTA and place it with center-align of primary"
+        ],
+        "output": ["return `DONE`"]
+      }
+    },
+    "validator": {
+      "role": "Validate design output using checklist to confirm adherence to its convention and return final output message",
+      "workflow": {
+        "validate": {
+          "common": [
+            "use get_node for all created layers to check if they exist in the current page root",
+            "use get_node for all created layers and check if visible is true",
+            "all shape and text properities are valid text and numbers with no NaN",
+            "all shape and text properties follow the colorPalette and typography rules",
+            "validate component consistency with design guide: ##COMMON##"
+          ],
+          "headline": [
+            "text is not over 22 characters. If over 22, ask user to input again",
+            "line-height is calculated properly (lineHeight = 1.125 x font-size)"
+          ]
+        },
+        "output": [
+          "return `SUCCESS` if all validation pass",
+          "return `ERROR` if any one validation fail"
+        ]
+      }
+    }
+  },
+  "common": {
+    "colorPalette": {
+      "rectangle": ["#99005A", "#000000"],
+      "text": ["#FFFFFF", "#14b86b"]
+    },
+    "typography": {
+      "fontFamily": ["Arial Black", "sans-serif"],
+      "fontSizes": ["12px", "24px", "36px"]
+    },
+    "components": {
+      "primary": {
+        "name": "primary",
+        "shape": "rectangle",
+        "fill": {
+          "type": "solid",
+          "color": "#99005A"
+        },
+        "opacity": 1,
+        "visible": true,
+        "width": 500,
+        "height": 500
+      },
+      "secondary": {
+        "name": "secondary",
+        "shape": "rectangle",
+        "fill": {
+          "type": "image",
+          "imageUrl": "https://workflow.mzai.co.kr/uploads/images/6e526f849ef5af87c115e5fbe863e450.png",
+          "imageScaleMode": "FILL",
+          "fallbackColor": "#000000"
+        },
+        "opacity": 1,
+        "visible": true,
+        "width": 100,
+        "height": 100
+      },
+      "cta": {
+        "name": "cta",
+        "shape": "circle",
+        "fill": {
+          "type": "solid",
+          "color": "#000000"
+        },
+        "opacity": 1,
+        "visible": true,
+        "width": 100,
+        "height": 100
+      },
+      "headline": {
+        "name": "headline",
+        "shape": "text",
+        "font": {
+          "color": "#14b86b",
+          "family": ["Arial Black", "sans-serif"],
+          "size": "24px",
+          "lineHeight": "1.125 x font-size"
+        },
+        "opacity": 1,
+        "align": "left"
+      }
+    }
+  }
+}

@@ -11,6 +11,7 @@ import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
 import LayerTree from './LayerTree.vue'
 import PagesPanel from './PagesPanel.vue'
+import WorkflowPanel from './WorkflowPanel.vue'
 import {
   DRAWER_SPRING_DAMPING,
   DRAWER_SPRING_STIFFNESS,
@@ -22,7 +23,7 @@ import {
 import { useEditorStore } from '@/stores/editor'
 
 type Snap = 'closed' | 'half' | 'full'
-type DrawerTab = 'layers' | 'design' | 'code' | 'ai' | 'agent'
+type DrawerTab = 'layers' | 'design' | 'code' | 'ai' | 'agent' | 'workflow'
 
 const store = useEditorStore()
 
@@ -41,11 +42,12 @@ const snap = computed({
 function getDrawerTab(): DrawerTab {
   if (store.state.activeRibbonTab === 'code') return 'code'
   if (store.state.activeRibbonTab === 'agent') return 'agent'
+  if (store.state.activeRibbonTab === 'workflow') return 'workflow'
   return store.state.panelMode === 'design' ? 'design' : 'layers'
 }
 
 function setDrawerTab(tab: DrawerTab) {
-  if (tab === 'code' || tab === 'ai' || tab === 'agent') {
+  if (tab === 'code' || tab === 'ai' || tab === 'agent' || tab === 'workflow') {
     store.state.activeRibbonTab = tab
     return
   }
@@ -171,6 +173,15 @@ const drawerTransition = {
           >
             <icon-lucide-bot class="size-4" />
           </TabsTrigger>
+
+          <TabsTrigger
+            data-test-id="mobile-ribbon-workflow"
+            value="workflow"
+            class="flex h-full cursor-pointer items-center justify-center px-3 transition-colors outline-none select-none data-[state=active]:text-accent"
+            @click="toggleTab('workflow')"
+          >
+            <icon-lucide-workflow class="size-4" />
+          </TabsTrigger>
         </TabsList>
       </nav>
 
@@ -207,6 +218,12 @@ const drawerTransition = {
         <TabsContent value="agent" class="mt-0 h-full data-[state=inactive]:hidden">
           <div data-test-id="mobile-drawer-agent" class="flex h-full flex-col">
             <AgentPanel />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="workflow" class="mt-0 h-full data-[state=inactive]:hidden">
+          <div data-test-id="mobile-drawer-workflow" class="flex h-full flex-col">
+            <WorkflowPanel />
           </div>
         </TabsContent>
       </div>

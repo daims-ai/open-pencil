@@ -5,10 +5,17 @@ import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { useLocalStorage } from '@vueuse/core'
 import { DirectChatTransport, stepCountIs, ToolLoopAgent } from 'ai'
-import { computed, watch } from 'vue'
+import { computed, shallowRef, watch, type Ref } from 'vue'
 
+import { setDelegateSender } from '@/ai/delegate-bridge'
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
-import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
+import {
+  MAX_AGENT_STEPS,
+  createAITools,
+  recordStepUsage,
+  resetRunSteps,
+  type ToolSetType
+} from '@/ai/tools'
 import { useElectronBridge, type OpenPencilConfig } from '@/bridge/electron-bridge'
 import { getActiveEditorStore } from '@/stores/editor'
 import {
@@ -78,15 +85,25 @@ const isConfigured = computed(() => {
   return true
 })
 
+export type ChatTabID = 'ai' | 'agent' | 'pm' | 'designer' | 'validator'
+
 let transportDirty = false
 let currentChatStore: ReturnType<typeof getActiveEditorStore> | null = null
-let currentChatTab: 'ai' | 'agent' | null = null
+let currentChatTab: ChatTabID | null = null
 const chatMessages = new Map<string, UIMessage[]>()
 
-function getChatMessageKey(
-  store: ReturnType<typeof getActiveEditorStore>,
-  tab: 'ai' | 'agent'
-): string {
+const tabChatInstances = new Map<ChatTabID, Chat<UIMessage>>()
+
+const tabChatRefs: Partial<Record<ChatTabID, Ref<Chat<UIMessage> | null>>> = {}
+
+function getTabChatRef(tab: ChatTabID): Ref<Chat<UIMessage> | null> {
+  if (!tabChatRefs[tab]) {
+    tabChatRefs[tab] = shallowRef<Chat<UIMessage> | null>(null)
+  }
+  return tabChatRefs[tab]
+}
+
+function getChatMessageKey(store: ReturnType<typeof getActiveEditorStore>, tab: ChatTabID): string {
   return `${store.state.currentPageId}:${tab}`
 }
 
@@ -255,18 +272,29 @@ async function createACPTransport() {
   return transport
 }
 
-function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
+function getAgentInstructions(store: ReturnType<typeof getActiveEditorStore>) {
+  return store.state.activeRibbonTab === 'designer' ? SYSTEM_PROMPT : undefined
+}
+
+function getToolSetForTab(tab: ChatTabID): ToolSetType {
+  return tab === 'pm' ? 'pm' : 'default'
+}
+
+function createTransport(store: ReturnType<typeof getActiveEditorStore>, tab: ChatTabID = 'ai') {
   if (overrideTransport) return overrideTransport()
 
   void acpTransportInstance?.destroy()
   acpTransportInstance = null
 
-  const tools = createAITools(store)
+  const toolSet = getToolSetForTab(tab)
+  const tools = createAITools(store, toolSet)
   const cacheProviderOptions = supportsAnthropicCaching() ? ANTHROPIC_CACHE_CONTROL : undefined
+
+  const instructions = getAgentInstructions(store)
 
   const agent = new ToolLoopAgent({
     model: createModel(),
-    instructions: SYSTEM_PROMPT,
+    instructions,
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     maxOutputTokens: maxOutputTokens.value,
@@ -296,7 +324,7 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
   return new DirectChatTransport({ agent })
 }
 
-async function ensureChat(tab: 'ai' | 'agent'): Promise<Chat<UIMessage> | null> {
+async function ensureChat(tab: ChatTabID): Promise<Chat<UIMessage> | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
@@ -311,14 +339,31 @@ async function ensureChat(tab: 'ai' | 'agent'): Promise<Chat<UIMessage> | null> 
     !chat || transportDirty || currentChatStore !== store || currentChatTab !== tab
 
   if (needsNewChat) {
-    const messages = chatMessages.get(messageKey) ?? []
-    const transport = isACPProvider.value ? await createACPTransport() : createTransport(store)
-    chat = new Chat<UIMessage>({ transport, messages })
+    const existing = tabChatInstances.get(tab)
+    if (existing && !transportDirty) {
+      chat = existing
+    } else {
+      const messages = chatMessages.get(messageKey) ?? []
+      const transport = isACPProvider.value
+        ? await createACPTransport()
+        : createTransport(store, tab)
+      chat = new Chat<UIMessage>({ transport, messages })
+      tabChatInstances.set(tab, chat)
+      getTabChatRef(tab).value = chat
+    }
     currentChatStore = store
     currentChatTab = tab
     transportDirty = false
   }
   return chat
+}
+
+function getTabChat(tab: ChatTabID): Chat<UIMessage> | null {
+  return tabChatInstances.get(tab) ?? null
+}
+
+function useTabChat(tab: ChatTabID) {
+  return getTabChatRef(tab)
 }
 
 function resetChat() {
@@ -332,10 +377,14 @@ function resetChat() {
   transportDirty = false
 }
 
-function resetTabChat(tab: 'ai' | 'agent') {
+function resetTabChat(tab: ChatTabID) {
   if (currentChatStore) {
     const key = getChatMessageKey(currentChatStore, tab)
     chatMessages.delete(key)
+  }
+  tabChatInstances.delete(tab)
+  if (tabChatRefs[tab]) {
+    tabChatRefs[tab].value = null
   }
   if (currentChatTab === tab) {
     chat = null
@@ -343,6 +392,73 @@ function resetTabChat(tab: 'ai' | 'agent') {
   }
   transportDirty = true
 }
+
+export type AgentID = 'designer' | 'validator'
+
+export interface AgentResponse {
+  success: boolean
+  result?: string
+  error?: string
+}
+
+function agentIdToTab(agentId: AgentID): ChatTabID {
+  return agentId
+}
+
+async function sendMessageToAgent(agentId: AgentID, message: string): Promise<AgentResponse> {
+  if (!isConfigured.value) {
+    return { success: false, error: 'AI provider not configured' }
+  }
+
+  try {
+    const tab = agentIdToTab(agentId)
+    const agentChat = await ensureChat(tab)
+
+    if (!agentChat) {
+      return { success: false, error: 'Failed to create agent chat' }
+    }
+
+    await agentChat.sendMessage({ text: message })
+
+    await new Promise<void>((resolve, reject) => {
+      const checkStatus = () => {
+        if (agentChat.status === 'ready') {
+          resolve()
+        } else if (agentChat.status === 'error') {
+          reject(new Error('Agent chat error'))
+        } else {
+          setTimeout(checkStatus, 100)
+        }
+      }
+      checkStatus()
+    })
+
+    const messages = agentChat.messages
+    if (messages.length === 0) {
+      return { success: true, result: 'Agent completed' }
+    }
+
+    const lastMessage = messages[messages.length - 1]
+    if (lastMessage.role === 'assistant') {
+      const textParts = lastMessage.parts
+        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+        .map((p) => p.text)
+        .join('\n')
+
+      return { success: true, result: textParts || 'Agent completed without text response' }
+    }
+
+    return { success: true, result: 'Agent completed' }
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e)
+    console.error(`[sendMessageToAgent] Error sending to ${agentId}:`, e)
+    return { success: false, error: errorMsg }
+  }
+}
+
+export { sendMessageToAgent, getTabChat, useTabChat }
+
+setDelegateSender(sendMessageToAgent)
 
 if (IS_BROWSER) {
   window.__OPEN_PENCIL_SET_TRANSPORT__ = (factory) => {

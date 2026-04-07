@@ -113,6 +113,7 @@ import {
   exportSvg,
   exportImage
 } from './vector'
+import { DELEGATE_TOOLS } from './delegate'
 
 import type { ToolDef } from './schema'
 
@@ -258,5 +259,10 @@ export const ALL_TOOLS: ToolDef[] = [
   getPrompt,
   searchAndApplyPrompt,
   // Text measurement
-  measureTextLayout
+  measureTextLayout,
+  // Multi-agent delegation
+  ...DELEGATE_TOOLS
 ]
+
+/** PM-specific tools including delegation capabilities */
+export const PM_TOOLS: ToolDef[] = [...CORE_TOOLS, ...DELEGATE_TOOLS]

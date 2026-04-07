@@ -111,12 +111,21 @@ export {
   ALL_TOOLS,
   CORE_TOOLS,
   EXTENDED_TOOLS,
+  PM_TOOLS,
   defineTool,
   toolsToAI,
   buildDebugLog,
   requireNode,
   NodeNotFoundError,
-  calcClusterConfidence
+  calcClusterConfidence,
+  setDelegateHandler,
+  getDelegateHandler,
+  setWorkflowConfig,
+  getWorkflowConfig,
+  setDeleteCreatedContentHandler,
+  buildPMStartMessage,
+  isWorkflowJson,
+  DELEGATE_TOOLS
 } from './tools'
 export type {
   ToolDef,
@@ -125,7 +134,14 @@ export type {
   ToolLogEntry,
   ToolDebugLog,
   AIAdapterOptions,
-  StepBudget
+  StepBudget,
+  DelegateAgentID,
+  DelegateResponse,
+  DelegateHandler,
+  WorkflowConfig,
+  WorkflowResult,
+  WorkflowStepResult,
+  DeleteCreatedContentHandler
 } from './tools'
 export { executeRpcCommand, ALL_RPC_COMMANDS } from './rpc'
 export { queryByXPath, matchByXPath } from './xpath'

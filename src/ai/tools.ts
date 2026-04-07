@@ -2,19 +2,35 @@ import { valibotSchema } from '@ai-sdk/valibot'
 import { tool } from 'ai'
 import * as v from 'valibot'
 
+import { getDelegateSender } from '@/ai/delegate-bridge'
 import { makeFigmaFromStore } from '@/automation/figma-factory'
 import { getActiveEditorStore } from '@/stores/editor'
 import {
   CORE_TOOLS,
+  PM_TOOLS,
   collectFontKeys,
   computeAllLayouts,
   isFontLoaded,
   loadFont,
+  setDelegateHandler,
+  setWorkflowConfig,
   toolsToAI
 } from '@open-pencil/core'
 
 import type { EditorStore } from '@/stores/editor'
-import type { SceneNode, StepBudget, ToolLogEntry } from '@open-pencil/core'
+import type { SceneNode, StepBudget, ToolLogEntry, WorkflowConfig } from '@open-pencil/core'
+
+setDelegateHandler(async (agentId, message) => {
+  const sender = getDelegateSender()
+  if (!sender) {
+    return { success: false, error: 'Delegate sender not initialized' }
+  }
+  return sender(agentId, message)
+})
+
+export function loadWorkflowConfig(config: WorkflowConfig): void {
+  setWorkflowConfig(config)
+}
 
 export const MAX_AGENT_STEPS = 50
 
@@ -86,12 +102,16 @@ export function clearToolLogEntries(store?: EditorStore): void {
   getRunState(store).clear()
 }
 
-export function createAITools(store: EditorStore) {
+export type ToolSetType = 'default' | 'pm'
+
+export function createAITools(store: EditorStore, toolSet: ToolSetType = 'default') {
   let beforeSnapshot: Map<string, SceneNode> | null = null
   const runState = getRunState(store)
 
+  const tools = toolSet === 'pm' ? PM_TOOLS : CORE_TOOLS
+
   return toolsToAI(
-    CORE_TOOLS,
+    tools,
     {
       getFigma: () => makeFigmaFromStore(store),
       onBeforeExecute: (def) => {
