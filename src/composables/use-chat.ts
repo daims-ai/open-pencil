@@ -80,20 +80,17 @@ const isConfigured = computed(() => {
 
 let transportDirty = false
 let currentChatStore: ReturnType<typeof getActiveEditorStore> | null = null
-let currentChatTab: 'ai' | 'agent' | null = null
+let currentChatKey: string | null = null
 const chatMessages = new Map<string, UIMessage[]>()
 
-function getChatMessageKey(
-  store: ReturnType<typeof getActiveEditorStore>,
-  tab: 'ai' | 'agent'
-): string {
-  return `${store.state.currentPageId}:${tab}`
+function getChatMessageKey(store: ReturnType<typeof getActiveEditorStore>, key: string): string {
+  return `${store.state.currentPageId}:${key}`
 }
 
 function markTransportDirty() {
   transportDirty = true
   currentChatStore = null
-  currentChatTab = null
+  currentChatKey = null
   chatMessages.clear()
 }
 
@@ -296,50 +293,50 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
   return new DirectChatTransport({ agent })
 }
 
-async function ensureChat(tab: 'ai' | 'agent'): Promise<Chat<UIMessage> | null> {
+async function ensureChat(key: string): Promise<Chat<UIMessage> | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
-  const messageKey = getChatMessageKey(store, tab)
+  const messageKey = getChatMessageKey(store, key)
 
-  if (currentChatStore && chat && currentChatTab) {
-    const oldKey = getChatMessageKey(currentChatStore, currentChatTab)
+  if (currentChatStore && chat && currentChatKey) {
+    const oldKey = getChatMessageKey(currentChatStore, currentChatKey)
     chatMessages.set(oldKey, chat.messages)
   }
 
   const needsNewChat =
-    !chat || transportDirty || currentChatStore !== store || currentChatTab !== tab
+    !chat || transportDirty || currentChatStore !== store || currentChatKey !== key
 
   if (needsNewChat) {
     const messages = chatMessages.get(messageKey) ?? []
     const transport = isACPProvider.value ? await createACPTransport() : createTransport(store)
     chat = new Chat<UIMessage>({ transport, messages })
     currentChatStore = store
-    currentChatTab = tab
+    currentChatKey = key
     transportDirty = false
   }
   return chat
 }
 
 function resetChat() {
-  if (currentChatStore && currentChatTab) {
-    const key = getChatMessageKey(currentChatStore, currentChatTab)
-    chatMessages.delete(key)
+  if (currentChatStore && currentChatKey) {
+    const messageKey = getChatMessageKey(currentChatStore, currentChatKey)
+    chatMessages.delete(messageKey)
   }
   chat = null
   currentChatStore = null
-  currentChatTab = null
+  currentChatKey = null
   transportDirty = false
 }
 
-function resetTabChat(tab: 'ai' | 'agent') {
+function resetKeyChat(key: string) {
   if (currentChatStore) {
-    const key = getChatMessageKey(currentChatStore, tab)
-    chatMessages.delete(key)
+    const messageKey = getChatMessageKey(currentChatStore, key)
+    chatMessages.delete(messageKey)
   }
-  if (currentChatTab === tab) {
+  if (currentChatKey === key) {
     chat = null
-    currentChatTab = null
+    currentChatKey = null
   }
   transportDirty = true
 }
@@ -373,4 +370,4 @@ export function useAIChat() {
   }
 }
 
-export { resetTabChat }
+export { resetKeyChat }

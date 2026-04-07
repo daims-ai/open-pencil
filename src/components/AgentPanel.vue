@@ -10,7 +10,7 @@ import ACPPermissionDialog from '@/components/chat/ACPPermissionDialog.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
-import { useAIChat, resetTabChat } from '@/composables/use-chat'
+import { useAIChat, resetKeyChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
 
 import type { Chat } from '@ai-sdk/vue'
@@ -117,7 +117,7 @@ async function handleCopyAcpLog() {
 
 function handleClearChat() {
   chat.value = null
-  resetTabChat('agent')
+  resetKeyChat('agent')
   clearToolLogEntries()
   clearAcpDebugLog()
 }
