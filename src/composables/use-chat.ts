@@ -252,7 +252,11 @@ async function createACPTransport() {
   return transport
 }
 
-function createTransport(store: ReturnType<typeof getActiveEditorStore>, key: string) {
+function createTransport(
+  store: ReturnType<typeof getActiveEditorStore>,
+  key: string,
+  instructions?: string
+) {
   if (overrideTransport) return overrideTransport()
 
   void acpTransportInstance?.destroy()
@@ -260,12 +264,13 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>, key: st
 
   const cacheProviderOptions = supportsAnthropicCaching() ? ANTHROPIC_CACHE_CONTROL : undefined
 
-  const tools = key === 'ai' ? createAITools(store) : undefined
-  const instructions = key === 'ai' ? SYSTEM_PROMPT : undefined
+  // const tools = key === 'ai' ? createAITools(store) : undefined
+  const tools = createAITools(store)
+  const systemPrompt = key === 'ai' ? SYSTEM_PROMPT : instructions
 
   const agent = new ToolLoopAgent({
     model: createModel(),
-    instructions,
+    instructions: systemPrompt,
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
     maxOutputTokens: maxOutputTokens.value,
@@ -295,7 +300,7 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>, key: st
   return new DirectChatTransport({ agent })
 }
 
-async function ensureChat(key: string): Promise<Chat<UIMessage> | null> {
+async function ensureChat(key: string, instructions?: string): Promise<Chat<UIMessage> | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
@@ -311,7 +316,9 @@ async function ensureChat(key: string): Promise<Chat<UIMessage> | null> {
 
   if (needsNewChat) {
     const messages = chatMessages.get(messageKey) ?? []
-    const transport = isACPProvider.value ? await createACPTransport() : createTransport(store, key)
+    const transport = isACPProvider.value
+      ? await createACPTransport()
+      : createTransport(store, key, instructions)
     chat = new Chat<UIMessage>({ transport, messages })
     currentChatStore = store
     currentChatKey = key

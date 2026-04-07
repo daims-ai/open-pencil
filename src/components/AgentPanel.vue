@@ -16,6 +16,7 @@ import { parseDaimsWorkflow } from '@open-pencil/core'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
+import type { DaimsWorkflow } from '@open-pencil/core'
 
 const IS_DEV = import.meta.env.DEV
 
@@ -23,6 +24,21 @@ const { isConfigured, ensureChat, resetChat } = useAIChat()
 const { dialogs } = useI18n()
 
 const chat = ref<Chat<UIMessage> | null>(null)
+
+interface WorkflowAgent {
+  key: string
+  label: string
+  chat: Chat<UIMessage>
+}
+
+const workflowActive = ref(false)
+const workflowAgents = ref<WorkflowAgent[]>([])
+const activeAgentIndex = ref(0)
+
+const activeWorkflowChat = computed(() => {
+  if (!workflowActive.value || workflowAgents.value.length === 0) return null
+  return workflowAgents.value[activeAgentIndex.value]?.chat ?? null
+})
 
 // Only initialize chat when on the Agent tab
 if (activeTab.value?.id === 'agent') {
@@ -35,8 +51,15 @@ const debugCopied = ref(false)
 const acpLogCopied = ref(false)
 const initError = ref<string | null>(null)
 
-const messages = computed(() => chat.value?.messages ?? [])
-const status = computed(() => chat.value?.status ?? 'ready')
+const currentChat = computed(() => {
+  if (workflowActive.value && activeWorkflowChat.value) {
+    return activeWorkflowChat.value
+  }
+  return chat.value
+})
+
+const messages = computed(() => currentChat.value?.messages ?? [])
+const status = computed(() => currentChat.value?.status ?? 'ready')
 const isThinking = computed(() => {
   const s = status.value
   if (s !== 'submitted' && s !== 'streaming') return false
@@ -78,6 +101,39 @@ watch(
   }
 )
 
+async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
+  const agents: WorkflowAgent[] = []
+
+  for (const key of workflow.order) {
+    const agentConfig = workflow.agent[key] as { role?: string; workflow?: unknown }
+    const systemPrompt = agentConfig?.role ?? ''
+    const chatInstance = await ensureChat(`workflow:${key}`, systemPrompt)
+
+    if (chatInstance) {
+      agents.push({
+        key,
+        label: key.charAt(0).toUpperCase() + key.slice(1),
+        chat: markRaw(chatInstance)
+      })
+    }
+  }
+
+  if (agents.length === 0) return
+
+  workflowAgents.value = agents
+  workflowActive.value = true
+  activeAgentIndex.value = 0
+
+  // 첫 번째 에이전트에게 workflow 메시지 전송
+  const firstKey = workflow.order[0]
+  const firstAgentConfig = workflow.agent[firstKey] as { workflow?: unknown }
+  const firstText = JSON.stringify(firstAgentConfig?.workflow ?? {})
+
+  agents[0].chat.sendMessage({ text: firstText }).catch((e: unknown) => {
+    console.error('Chat error:', e)
+  })
+}
+
 async function handleSubmit(text: string) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
@@ -90,10 +146,17 @@ async function handleSubmit(text: string) {
     return
   }
 
+  // workflow 형식이 아니더라도 workflow가 활성화된 상태면 현재 에이전트로 메시지 전송
+  if (workflowActive.value && activeWorkflowChat.value) {
+    activeWorkflowChat.value.sendMessage({ text }).catch((e: unknown) => {
+      console.error('Chat error:', e)
+    })
+    return
+  }
+
   const workflow = parseDaimsWorkflow(text)
   if (workflow) {
-    // TODO-1:: workflow.order 에서 첫번째 key를 가져와서 독립적인 컨텍스트를 갖는 chat 인스턴스(에이전트 - ex. pm agent)를 생성
-
+    await initializeWorkflow(workflow, text)
     return
   }
 
@@ -103,7 +166,11 @@ async function handleSubmit(text: string) {
 }
 
 function handleStop() {
-  chat.value?.stop()
+  if (workflowActive.value && activeWorkflowChat.value) {
+    activeWorkflowChat.value.stop()
+  } else {
+    chat.value?.stop()
+  }
 }
 
 async function handleCopyDebug() {
@@ -125,6 +192,14 @@ async function handleCopyAcpLog() {
 }
 
 function handleClearChat() {
+  if (workflowActive.value) {
+    for (const agent of workflowAgents.value) {
+      resetKeyChat(`workflow:${agent.key}`)
+    }
+    workflowAgents.value = []
+    workflowActive.value = false
+    activeAgentIndex.value = 0
+  }
   chat.value = null
   resetKeyChat('agent')
   clearToolLogEntries()
@@ -137,6 +212,30 @@ function handleClearChat() {
     <ProviderSetup v-if="!isConfigured" />
 
     <template v-else>
+      <!-- Workflow agent tabs -->
+      <div
+        v-if="workflowActive && workflowAgents.length > 1"
+        class="flex shrink-0 gap-1 border-b border-border px-2 py-1.5"
+      >
+        <button
+          v-for="(agent, index) in workflowAgents"
+          :key="agent.key"
+          class="rounded px-2.5 py-1 text-xs font-medium transition-colors"
+          :class="
+            activeAgentIndex === index
+              ? 'bg-accent text-white'
+              : 'text-muted hover:bg-hover hover:text-surface'
+          "
+          @click="activeAgentIndex = index"
+        >
+          {{ agent.label }}
+          <span
+            v-if="agent.chat.status === 'streaming' || agent.chat.status === 'submitted'"
+            class="ml-1 inline-block size-1.5 animate-pulse rounded-full bg-current"
+          />
+        </button>
+      </div>
+
       <ScrollAreaRoot class="min-h-0 flex-1">
         <ScrollAreaViewport class="h-full px-3 py-3 [&>div]:h-full">
           <!-- Empty state -->

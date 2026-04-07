@@ -5,11 +5,13 @@
     "pm": {
       "role": "request user input, relay input/output to appropriate sub-agents and follow the workflow process to get final output",
       "workflow": [
-        "STEP1: Request user for marketing text copy",
-        "STEP2: Send user text input to #DESIGNER# and wait for return output",
-        "STEP3: If 'DONE' returns, then send validation request to #VALIDATOR# and wait for output",
-        "STEP4: If 'ERROR', delete all created content and start over from STEP2",
-        "STEP5: If 'PASS' output, finish workflow by providing summary"
+        "STEP1: Request user for text input",
+        "STEP2: Use 'is_string_length_even' tool to check if the input text length is even",
+        "STEP3: If isEven is true, proceed to STEP4. If isEven is false, inform user that text length must be even and go back to STEP1",
+        "STEP4: Send validated user text input to #DESIGNER# and wait for return output",
+        "STEP5: If 'DONE' returns, then send validation request to #VALIDATOR# and wait for output",
+        "STEP6: If 'ERROR', delete all created content and start over from STEP4",
+        "STEP7: If 'PASS' output, finish workflow by providing summary"
       ]
     },
     "designer": {

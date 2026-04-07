@@ -22,6 +22,7 @@ import {
   searchIconsTool
 } from './create'
 import { describe } from './describe'
+import { isStringLengthEvenTool } from './is-string-length-even'
 import { measureTextLayout } from './measure-text-layout'
 import {
   setFill,
@@ -153,6 +154,7 @@ export const CORE_TOOLS: ToolDef[] = [
   // DAIMS
   searchPrompts,
   getPrompt,
+  isStringLengthEvenTool,
   // Text measurement
   measureTextLayout
 ]
