@@ -332,90 +332,90 @@ async function cleanupContent(
   }
 }
 
-export const runWorkflow = defineTool({
-  name: 'run_workflow',
-  description:
-    'Execute the complete design workflow: Designer creates content, Validator checks it. If validation fails, content is deleted and retried. Loops until PASS or max retries reached.',
-  params: {
-    user_input: {
-      type: 'string',
-      description: 'User input text (e.g., marketing headline)',
-      required: true
-    },
-    max_retries: {
-      type: 'number',
-      description: 'Maximum retry attempts on validation failure (default: 3)',
-      required: false,
-      default: MAX_WORKFLOW_RETRIES
-    }
-  },
-  execute: async (figma, args) => {
-    const userInput = args.user_input
-    const maxRetries = MAX_WORKFLOW_RETRIES
+// export const runWorkflow = defineTool({
+//   name: 'run_workflow',
+//   description:
+//     'Execute the complete design workflow: Designer creates content, Validator checks it. If validation fails, content is deleted and retried. Loops until PASS or max retries reached.',
+//   params: {
+//     user_input: {
+//       type: 'string',
+//       description: 'User input text (e.g., marketing headline)',
+//       required: true
+//     },
+//     max_retries: {
+//       type: 'number',
+//       description: 'Maximum retry attempts on validation failure (default: 3)',
+//       required: false,
+//       default: MAX_WORKFLOW_RETRIES
+//     }
+//   },
+//   execute: async (figma, args) => {
+//     const userInput = args.user_input
+//     const maxRetries = MAX_WORKFLOW_RETRIES
 
-    const steps: WorkflowStepResult[] = []
-    let retryCount = 0
+//     const steps: WorkflowStepResult[] = []
+//     let retryCount = 0
 
-    while (retryCount < maxRetries) {
-      const designResult = await runDesignerStep(userInput, retryCount + 1, steps)
+//     while (retryCount < maxRetries) {
+//       const designResult = await runDesignerStep(userInput, retryCount + 1, steps)
 
-      if (!designResult.success) {
-        return {
-          success: false,
-          steps,
-          finalStatus: 'ERROR',
-          error: `Designer failed: ${designResult.error}`,
-          retryCount
-        } as WorkflowResult
-      }
+//       if (!designResult.success) {
+//         return {
+//           success: false,
+//           steps,
+//           finalStatus: 'ERROR',
+//           error: `Designer failed: ${designResult.error}`,
+//           retryCount
+//         } as WorkflowResult
+//       }
 
-      if (!designResult.done) {
-        return {
-          success: false,
-          steps,
-          finalStatus: 'ERROR',
-          error: 'Designer did not return DONE',
-          retryCount
-        } as WorkflowResult
-      }
+//       if (!designResult.done) {
+//         return {
+//           success: false,
+//           steps,
+//           finalStatus: 'ERROR',
+//           error: 'Designer did not return DONE',
+//           retryCount
+//         } as WorkflowResult
+//       }
 
-      const validResult = await runValidatorStep(retryCount + 1, steps)
+//       const validResult = await runValidatorStep(retryCount + 1, steps)
 
-      if (!validResult.success) {
-        return {
-          success: false,
-          steps,
-          finalStatus: 'ERROR',
-          error: `Validator failed: ${validResult.error}`,
-          retryCount
-        } as WorkflowResult
-      }
+//       if (!validResult.success) {
+//         return {
+//           success: false,
+//           steps,
+//           finalStatus: 'ERROR',
+//           error: `Validator failed: ${validResult.error}`,
+//           retryCount
+//         } as WorkflowResult
+//       }
 
-      if (validResult.passed) {
-        return {
-          success: true,
-          steps,
-          finalStatus: 'PASS',
-          summary: `Workflow completed successfully after ${retryCount + 1} attempt(s)`,
-          retryCount
-        } as WorkflowResult
-      }
+//       if (validResult.passed) {
+//         return {
+//           success: true,
+//           steps,
+//           finalStatus: 'PASS',
+//           summary: `Workflow completed successfully after ${retryCount + 1} attempt(s)`,
+//           retryCount
+//         } as WorkflowResult
+//       }
 
-      retryCount++
+//       retryCount++
 
-      if (retryCount < maxRetries) {
-        await cleanupContent(figma, retryCount + 1, steps)
-      }
-    }
+//       if (retryCount < maxRetries) {
+//         await cleanupContent(figma, retryCount + 1, steps)
+//       }
+//     }
 
-    return {
-      success: false,
-      steps,
-      finalStatus: 'MAX_RETRIES_EXCEEDED',
-      error: `Validation failed after ${maxRetries} attempts`,
-      retryCount
-    } as WorkflowResult
-  }
-})
+//     return {
+//       success: false,
+//       steps,
+//       finalStatus: 'MAX_RETRIES_EXCEEDED',
+//       error: `Validation failed after ${maxRetries} attempts`,
+//       retryCount
+//     } as WorkflowResult
+//   }
+// })
 
-export const DELEGATE_TOOLS = [delegateToDesigner, delegateToValidator, runWorkflow]
+export const DELEGATE_TOOLS = [delegateToDesigner, delegateToValidator]
