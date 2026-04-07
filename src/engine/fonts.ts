@@ -59,7 +59,6 @@ export async function listFamilies(): Promise<string[]> {
 }
 
 export async function loadFont(family: string, style = 'Regular'): Promise<ArrayBuffer | null> {
-
   if (IS_FROM_DAIMS) {
     const provider = getDaimsFontProvider()
     if (!provider) return null

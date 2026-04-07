@@ -8,7 +8,6 @@ import {
   evalCode
 } from './analyze'
 import { calc } from './calc'
-import { measureTextLayout } from './measure-text-layout'
 import { designToTokens, designToComponentMap } from './codegen'
 import {
   createShape,
@@ -23,6 +22,7 @@ import {
   searchIconsTool
 } from './create'
 import { describe } from './describe'
+import { measureTextLayout } from './measure-text-layout'
 import {
   setFill,
   setStroke,
@@ -154,7 +154,7 @@ export const CORE_TOOLS: ToolDef[] = [
   searchPrompts,
   getPrompt,
   // Text measurement
-  measureTextLayout,
+  measureTextLayout
 ]
 
 /**
@@ -258,5 +258,5 @@ export const ALL_TOOLS: ToolDef[] = [
   getPrompt,
   searchAndApplyPrompt,
   // Text measurement
-  measureTextLayout,
+  measureTextLayout
 ]

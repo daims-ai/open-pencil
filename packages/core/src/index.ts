@@ -1,6 +1,6 @@
 // Polyfill for environments without native Uint8Array base64 methods (e.g. older browsers, iframes)
 if (typeof Uint8Array.fromBase64 !== 'function') {
-  ; (Uint8Array as unknown as { fromBase64: (b: string) => Uint8Array }).fromBase64 = function (
+  ;(Uint8Array as unknown as { fromBase64: (b: string) => Uint8Array }).fromBase64 = function (
     base64: string
   ): Uint8Array {
     const binaryString = atob(base64)

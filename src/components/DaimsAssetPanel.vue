@@ -11,13 +11,18 @@ const placingId = ref<number | null>(null)
 const filteredImages = computed(() => {
   const q = query.value.toLowerCase().trim()
   if (!q) return daimsAssetImages.value
-  return daimsAssetImages.value.filter((img) => img.name.toLowerCase().includes(q) || img.tags.some((tag) => tag.toLowerCase().includes(q)))
+  return daimsAssetImages.value.filter(
+    (img) =>
+      img.name.toLowerCase().includes(q) || img.tags.some((tag) => tag.toLowerCase().includes(q))
+  )
 })
 
 function handleImageClick(img: { id: number }) {
   placingId.value = img.id
   requestAssetImagePlace(img.id)
-  setTimeout(() => { placingId.value = null }, 2000)
+  setTimeout(() => {
+    placingId.value = null
+  }, 2000)
 }
 </script>
 
@@ -67,11 +72,7 @@ function handleImageClick(img: { id: number }) {
             :title="`Click to place: ${img.name}`"
             @click="handleImageClick(img)"
           >
-            <img
-              :src="img.thumbnailUrl"
-              :alt="img.name"
-              class="size-full object-contain"
-            />
+            <img :src="img.thumbnailUrl" :alt="img.name" class="size-full object-contain" />
           </button>
         </CollapsibleContent>
       </CollapsibleRoot>

@@ -2,6 +2,7 @@ import { deflateSync } from 'fflate'
 
 import { CANVAS_BG_COLOR, IS_BROWSER, IS_TAURI } from '@open-pencil/core/constants'
 import { compressFigDataSync } from '@open-pencil/core/fig-compress'
+import { computeImageHash } from '@open-pencil/core/figma-api'
 import { renderThumbnail } from '@open-pencil/core/io/formats/raster'
 import { initCodec, getCompiledSchema, getSchemaBytes } from '@open-pencil/core/kiwi/codec'
 import { stringToGuid } from '@open-pencil/core/kiwi/convert'
@@ -13,8 +14,6 @@ import {
   makeDocumentNodeChange,
   makeCanvasNodeChange
 } from '@open-pencil/core/kiwi/serialize'
-
-import { computeImageHash } from '@open-pencil/core/figma-api'
 
 import type { NodeChange } from '@open-pencil/core/kiwi/codec'
 import type { SkiaRenderer } from '@open-pencil/core/renderer'
