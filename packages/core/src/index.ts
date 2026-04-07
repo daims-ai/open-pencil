@@ -435,3 +435,6 @@ export {
 } from './tools/stock-photo'
 export type { StockPhotoProvider, StockPhotoResult } from './tools/stock-photo'
 export { setDaimsApiKey } from './tools/prompt-search'
+
+export { parseDaimsWorkflow } from './daims'
+export type { DaimsWorkflow } from './daims'

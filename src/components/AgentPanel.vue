@@ -12,6 +12,7 @@ import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat, resetKeyChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
+import { parseDaimsWorkflow } from '@open-pencil/core'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -88,6 +89,14 @@ async function handleSubmit(text: string) {
     initError.value = e instanceof Error ? e.message : String(e)
     return
   }
+
+  const workflow = parseDaimsWorkflow(text)
+  if (workflow) {
+    // TODO-1:: workflow.order 에서 첫번째 key를 가져와서 독립적인 컨텍스트를 갖는 chat 인스턴스(에이전트 - ex. pm agent)를 생성
+
+    return
+  }
+
   chat.value?.sendMessage({ text }).catch((e: unknown) => {
     console.error('Chat error:', e)
   })
