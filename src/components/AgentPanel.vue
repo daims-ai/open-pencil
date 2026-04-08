@@ -103,9 +103,16 @@ watch(
 
 function buildSubAgentSystemPrompt(
   agentConfig: SubAgentConfig,
-  common: Record<string, unknown>
+  common: Record<string, unknown>,
+  retryCount: number
 ): string {
   const parts: string[] = []
+
+  if (retryCount > 0) {
+    parts.push(
+      `# Retry Information\nThis is retry attempt #${retryCount}. Previous attempts have failed. Please be extra careful and thorough.`
+    )
+  }
 
   if (agentConfig.role) {
     parts.push(`# Role\n${agentConfig.role}`)
@@ -157,13 +164,13 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
 
   const commonConfig = workflow.common ?? {}
 
-  setSubAgentExecutor(async (agentKey: string, message: string): Promise<string> => {
+  setSubAgentExecutor(async (agentKey: string, message: string, retryCount: number): Promise<string> => {
     const agentConfig = agentsMap[agentKey]
     if (!agentConfig) {
       throw new Error(`Agent "${agentKey}" not found in workflow`)
     }
 
-    const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig)
+    const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount)
     const subChat = await createOneOffChat(systemPrompt)
     if (!subChat) {
       throw new Error('Failed to create sub-agent chat')

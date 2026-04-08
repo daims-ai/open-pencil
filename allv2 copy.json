@@ -37,7 +37,7 @@
         "all shape and text properities are valid text and numbers with no NaN",
         "all shape and text properties follow the colorPalette and typography rules",
         "text is not over 22 characters. If over 22, ask user to input again",
-        "line-height is calculated properly (lineHeight = 1.125 x font-size)",
+        "line-height is calculated properly (lineHeight = 1.125 * font-size)",
         "return `SUCCESS` if all validation pass",
         "return `ERROR` if any one validation fail"
       ]
@@ -98,7 +98,7 @@
           "color": "#14b86b",
           "family": ["Arial Black", "sans-serif"],
           "size": "24px",
-          "lineHeight": "1.125 x font-size"
+          "lineHeight": "1.125 * font-size"
         },
         "opacity": 1,
         "align": "left"

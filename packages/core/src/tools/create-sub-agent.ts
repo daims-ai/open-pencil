@@ -20,15 +20,23 @@ export interface WorkflowStepResult {
 }
 
 let currentWorkflowContext: WorkflowContext | null = null
-let subAgentExecutor: ((agentKey: string, message: string) => Promise<string>) | null = null
+let subAgentExecutor:
+  | ((agentKey: string, message: string, retryCount: number) => Promise<string>)
+  | null = null
 let workflowHistory: WorkflowStepResult[] = []
 let workflowResetHandler: (() => Promise<void>) | null = null
+let retryCount = 0
 
 export function setWorkflowContext(context: WorkflowContext | null): void {
   currentWorkflowContext = context
   if (!context) {
     workflowHistory = []
+    retryCount = 0
   }
+}
+
+export function getRetryCount(): number {
+  return retryCount
 }
 
 export function getWorkflowContext(): WorkflowContext | null {
@@ -36,7 +44,7 @@ export function getWorkflowContext(): WorkflowContext | null {
 }
 
 export function setSubAgentExecutor(
-  executor: ((agentKey: string, message: string) => Promise<string>) | null
+  executor: ((agentKey: string, message: string, retryCount: number) => Promise<string>) | null
 ): void {
   subAgentExecutor = executor
 }
@@ -100,7 +108,7 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
     }
 
     try {
-      const response = await subAgentExecutor(agent_key, message)
+      const response = await subAgentExecutor(agent_key, message, retryCount)
       addWorkflowStepResult({
         step: `create_sub_agent:${agent_key}`,
         agentKey: agent_key,
@@ -110,6 +118,7 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
       return {
         success: true,
         agentKey: agent_key,
+        retryCount,
         response
       }
     } catch (error) {
@@ -123,6 +132,7 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
       return {
         success: false,
         agentKey: agent_key,
+        retryCount,
         error: errorMsg
       }
     }
@@ -236,13 +246,15 @@ This will:
     }
 
     clearWorkflowHistory()
+    retryCount++
 
     return {
       success: true,
       reason,
+      retryCount,
       deletedNodes: nodesToDelete.length,
       previousHistory: historyBeforeReset,
-      message: `Workflow reset complete. Deleted ${nodesToDelete.length} nodes. Ready to retry.`
+      message: `Workflow reset complete. Deleted ${nodesToDelete.length} nodes. This is retry #${retryCount}. Ready to retry.`
     }
   }
 })

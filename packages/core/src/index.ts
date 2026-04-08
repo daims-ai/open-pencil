@@ -440,7 +440,8 @@ export {
   getWorkflowContext,
   setSubAgentExecutor,
   setWorkflowResetHandler,
-  clearWorkflowHistory
+  clearWorkflowHistory,
+  getRetryCount
 } from './tools/create-sub-agent'
 export type { SubAgentConfig, WorkflowContext, WorkflowStepResult } from './tools/create-sub-agent'
 
