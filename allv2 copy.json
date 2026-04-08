@@ -3,115 +3,102 @@
   "order": ["pm", "designer", "validator"],
   "agent": {
     "pm": {
-      "role": "request user input, relay input/output to appropriate sub-agents and follow the workflow process to get final output",
+      "role": "You are a project manager. Request user input, relay input/output to appropriate sub-agents using 'create_sub_agent' tool, and follow the workflow process to get final output.",
       "workflow": [
         "STEP1: Request user for text input",
         "STEP2: Use 'is_string_length_even' tool to check if the input text length is even",
         "STEP3: If isEven is true, proceed to STEP4. If isEven is false, inform user that text length must be even and go back to STEP1",
-        "STEP4: Send validated user text input to #DESIGNER# and wait for return output",
-        "STEP5: If 'DONE' returns, then send validation request to #VALIDATOR# and wait for output",
-        "STEP6: If 'ERROR', delete all created content and start over from STEP4",
-        "STEP7: If 'PASS' output, finish workflow by providing summary"
+        "STEP4: Use 'create_sub_agent' tool with agent_key='designer' and send the validated user text input as message. Wait for the response.",
+        "STEP5: If designer returns 'DONE', use 'create_sub_agent' tool with agent_key='validator' and send validation request. Wait for the response.",
+        "STEP6: If validator returns 'ERROR', delete all created content using tools, then go back to STEP4 to restart design process",
+        "STEP7: If validator returns 'PASS' or 'SUCCESS', finish workflow by providing summary to the user"
       ]
     },
     "designer": {
       "role": "design specialist - create contents using layers and tools",
-      "composition": "initialize, create, output",
-      "input": "user input text, ##COMMON##",
-      "workflow": {
-        "initialize": ["evaluate current page root and create all layers in the same page root"],
-        "create": [
-          "create_shape primary at (0,0)",
-          "get_node of primary, create_shape secondary at (400,0)",
-          "get_node of primary, then create_shape headline with user input text at margin (20px 0px) from (0,0) of primary",
-          "measure text width using measure_text_layout and apply the measured width",
-          "get_node of primary, then create_shape CTA and place it with center-align of primary"
-        ],
-        "output": ["return `DONE`"]
-      }
+      "workflow": [
+        "STEP1: evaluate current page root and create all layers in the same page root",
+        "STEP2: create_shape primary at (0,0)",
+        "STEP3: get_node of primary, create_shape secondary at (400,0)",
+        "STEP4: get_node of primary, then create_shape headline with user input text at margin (20px 0px) from (0,0) of primary",
+        "STEP5: measure text width using measure_text_layout and apply the measured width",
+        "STEP6: get_node of primary, then create_shape CTA and place it with center-align of primary",
+        "STEP7: Send 'DONE' message to pm"
+      ]
     },
     "validator": {
       "role": "Validate design output using checklist to confirm adherence to its convention and return final output message",
-      "workflow": {
-        "validate": {
-          "common": [
-            "use get_node for all created layers to check if they exist in the current page root",
-            "use get_node for all created layers and check if visible is true",
-            "all shape and text properities are valid text and numbers with no NaN",
-            "all shape and text properties follow the colorPalette and typography rules",
-            "validate component consistency with design guide: ##COMMON##"
-          ],
-          "headline": [
-            "text is not over 22 characters. If over 22, ask user to input again",
-            "line-height is calculated properly (lineHeight = 1.125 x font-size)"
-          ]
-        },
-        "output": [
-          "return `SUCCESS` if all validation pass",
-          "return `ERROR` if any one validation fail"
-        ]
-      }
-    }
-  },
-  "common": {
-    "colorPalette": {
-      "rectangle": ["#99005A", "#000000"],
-      "text": ["#FFFFFF", "#14b86b"]
+      "workflow": [
+        "use get_node for all created layers to check if they exist in the current page root",
+        "use get_node for all created layers and check if visible is true",
+        "all shape and text properities are valid text and numbers with no NaN",
+        "all shape and text properties follow the colorPalette and typography rules",
+        "text is not over 22 characters. If over 22, ask user to input again",
+        "line-height is calculated properly (lineHeight = 1.125 x font-size)",
+        "return `SUCCESS` if all validation pass",
+        "return `ERROR` if any one validation fail"
+      ]
     },
-    "typography": {
-      "fontFamily": ["Arial Black", "sans-serif"],
-      "fontSizes": ["12px", "24px", "36px"]
-    },
-    "components": {
-      "primary": {
-        "name": "primary",
-        "shape": "rectangle",
-        "fill": {
-          "type": "solid",
-          "color": "#99005A"
-        },
-        "opacity": 1,
-        "visible": true,
-        "width": 500,
-        "height": 500
+    "common": {
+      "colorPalette": {
+        "rectangle": ["#99005A", "#000000"],
+        "text": ["#FFFFFF", "#14b86b"]
       },
-      "secondary": {
-        "name": "secondary",
-        "shape": "rectangle",
-        "fill": {
-          "type": "image",
-          "imageUrl": "https://workflow.mzai.co.kr/uploads/images/6e526f849ef5af87c115e5fbe863e450.png",
-          "imageScaleMode": "FILL",
-          "fallbackColor": "#000000"
-        },
-        "opacity": 1,
-        "visible": true,
-        "width": 100,
-        "height": 100
+      "typography": {
+        "fontFamily": ["Arial Black", "sans-serif"],
+        "fontSizes": ["12px", "24px", "36px"]
       },
-      "cta": {
-        "name": "cta",
-        "shape": "circle",
-        "fill": {
-          "type": "solid",
-          "color": "#000000"
+      "components": {
+        "primary": {
+          "name": "primary",
+          "shape": "rectangle",
+          "fill": {
+            "type": "solid",
+            "color": "#99005A"
+          },
+          "opacity": 1,
+          "visible": true,
+          "width": 500,
+          "height": 500
         },
-        "opacity": 1,
-        "visible": true,
-        "width": 100,
-        "height": 100
-      },
-      "headline": {
-        "name": "headline",
-        "shape": "text",
-        "font": {
-          "color": "#14b86b",
-          "family": ["Arial Black", "sans-serif"],
-          "size": "24px",
-          "lineHeight": "1.125 x font-size"
+        "secondary": {
+          "name": "secondary",
+          "shape": "rectangle",
+          "fill": {
+            "type": "image",
+            "imageUrl": "https://workflow.mzai.co.kr/uploads/images/6e526f849ef5af87c115e5fbe863e450.png",
+            "imageScaleMode": "FILL",
+            "fallbackColor": "#000000"
+          },
+          "opacity": 1,
+          "visible": true,
+          "width": 100,
+          "height": 100
         },
-        "opacity": 1,
-        "align": "left"
+        "cta": {
+          "name": "cta",
+          "shape": "circle",
+          "fill": {
+            "type": "solid",
+            "color": "#000000"
+          },
+          "opacity": 1,
+          "visible": true,
+          "width": 100,
+          "height": 100
+        },
+        "headline": {
+          "name": "headline",
+          "shape": "text",
+          "font": {
+            "color": "#14b86b",
+            "family": ["Arial Black", "sans-serif"],
+            "size": "24px",
+            "lineHeight": "1.125 x font-size"
+          },
+          "opacity": 1,
+          "align": "left"
+        }
       }
     }
   }

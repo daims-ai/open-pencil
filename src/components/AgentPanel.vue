@@ -10,13 +10,17 @@ import ACPPermissionDialog from '@/components/chat/ACPPermissionDialog.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
-import { useAIChat, resetKeyChat } from '@/composables/use-chat'
+import { useAIChat, resetKeyChat, createOneOffChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
-import { parseDaimsWorkflow } from '@open-pencil/core'
+import {
+  parseDaimsWorkflow,
+  setWorkflowContext,
+  setSubAgentExecutor
+} from '@open-pencil/core'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
-import type { DaimsWorkflow } from '@open-pencil/core'
+import type { DaimsWorkflow, SubAgentConfig } from '@open-pencil/core'
 
 const IS_DEV = import.meta.env.DEV
 
@@ -101,35 +105,119 @@ watch(
   }
 )
 
-async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
-  const agents: WorkflowAgent[] = []
+function buildSubAgentSystemPrompt(
+  agentConfig: SubAgentConfig,
+  common: Record<string, unknown>
+): string {
+  const parts: string[] = []
 
-  for (const key of workflow.order) {
-    const agentConfig = workflow.agent[key] as { role?: string; workflow?: unknown }
-    const systemPrompt = agentConfig?.role ?? ''
-    const chatInstance = await ensureChat(`workflow:${key}`, systemPrompt)
-
-    if (chatInstance) {
-      agents.push({
-        key,
-        label: key.charAt(0).toUpperCase() + key.slice(1),
-        chat: markRaw(chatInstance)
-      })
-    }
+  if (agentConfig.role) {
+    parts.push(`# Role\n${agentConfig.role}`)
   }
 
-  if (agents.length === 0) return
+  if (agentConfig.workflow) {
+    const workflowStr =
+      Array.isArray(agentConfig.workflow)
+        ? agentConfig.workflow.join('\n')
+        : JSON.stringify(agentConfig.workflow, null, 2)
+    parts.push(`# Workflow\n${workflowStr}`)
+  }
 
-  workflowAgents.value = agents
+  if (Object.keys(common).length > 0) {
+    parts.push(`# Common Configuration\n${JSON.stringify(common, null, 2)}`)
+  }
+
+  return parts.join('\n\n')
+}
+
+async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
+  if (workflow.order.length === 0) return
+
+  const firstKey = workflow.order[0]
+  const firstAgentConfig = workflow.agent[firstKey] as { role?: string; workflow?: unknown }
+  const systemPrompt = firstAgentConfig?.role ?? ''
+
+  const chatInstance = await ensureChat(`workflow:${firstKey}`, systemPrompt)
+  if (!chatInstance) return
+
+  const agents: SubAgentConfig[] = []
+  for (const key of workflow.order) {
+    const agentConfig = workflow.agent[key] as { role?: string; workflow?: unknown }
+    agents.push({
+      key,
+      role: agentConfig?.role ?? '',
+      workflow: agentConfig?.workflow
+    })
+  }
+
+  const agentsMap: Record<string, SubAgentConfig> = {}
+  for (const agent of agents) {
+    agentsMap[agent.key] = agent
+  }
+
+  setWorkflowContext({
+    agents: agentsMap,
+    common: workflow.common ?? {}
+  })
+
+  const commonConfig = workflow.common ?? {}
+
+  setSubAgentExecutor(async (agentKey: string, message: string): Promise<string> => {
+    const agentConfig = agentsMap[agentKey]
+    if (!agentConfig) {
+      throw new Error(`Agent "${agentKey}" not found in workflow`)
+    }
+
+    const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig)
+    const subChat = await createOneOffChat(systemPrompt)
+    if (!subChat) {
+      throw new Error('Failed to create sub-agent chat')
+    }
+
+    return new Promise((resolve, reject) => {
+      let responseText = ''
+
+      const unsubscribe = subChat.subscribe((state) => {
+        const lastMessage = state.messages[state.messages.length - 1]
+        if (lastMessage?.role === 'assistant') {
+          for (const part of lastMessage.parts) {
+            if (part.type === 'text') {
+              responseText = part.text
+            }
+          }
+        }
+
+        if (state.status === 'ready' && state.messages.length > 1) {
+          unsubscribe()
+          subChat.destroy()
+          resolve(responseText)
+        } else if (state.status === 'error') {
+          unsubscribe()
+          subChat.destroy()
+          reject(new Error(state.error?.message ?? 'Sub-agent error'))
+        }
+      })
+
+      subChat.sendMessage({ text: message }).catch((e: unknown) => {
+        unsubscribe()
+        subChat.destroy()
+        reject(e)
+      })
+    })
+  })
+
+  workflowAgents.value = [
+    {
+      key: firstKey,
+      label: firstKey.charAt(0).toUpperCase() + firstKey.slice(1),
+      chat: markRaw(chatInstance)
+    }
+  ]
   workflowActive.value = true
   activeAgentIndex.value = 0
 
-  // 첫 번째 에이전트에게 workflow 메시지 전송
-  const firstKey = workflow.order[0]
-  const firstAgentConfig = workflow.agent[firstKey] as { workflow?: unknown }
   const firstText = JSON.stringify(firstAgentConfig?.workflow ?? {})
-
-  agents[0].chat.sendMessage({ text: firstText }).catch((e: unknown) => {
+  chatInstance.sendMessage({ text: firstText }).catch((e: unknown) => {
     console.error('Chat error:', e)
   })
 }
@@ -199,6 +287,8 @@ function handleClearChat() {
     workflowAgents.value = []
     workflowActive.value = false
     activeAgentIndex.value = 0
+    setWorkflowContext(null)
+    setSubAgentExecutor(null)
   }
   chat.value = null
   resetKeyChat('agent')

@@ -9,6 +9,7 @@ import {
 } from './analyze'
 import { calc } from './calc'
 import { designToTokens, designToComponentMap } from './codegen'
+import { createSubAgent } from './create-sub-agent'
 import {
   createShape,
   render,
@@ -156,7 +157,9 @@ export const CORE_TOOLS: ToolDef[] = [
   getPrompt,
   isStringLengthEvenTool,
   // Text measurement
-  measureTextLayout
+  measureTextLayout,
+  // Sub-agent
+  createSubAgent
 ]
 
 /**

@@ -26,6 +26,12 @@ import {
 import type { ACPAgentID, AIProviderID } from '@open-pencil/core'
 import type { LanguageModel, UIMessage } from 'ai'
 
+export interface OneOffChat {
+  sendMessage: (options: { text: string }) => Promise<void>
+  subscribe: (callback: (state: { messages: UIMessage[]; status: string; error?: Error }) => void) => () => void
+  destroy: () => void
+}
+
 const STORAGE_PREFIX = 'open-pencil:'
 const LEGACY_KEY_STORAGE = `${STORAGE_PREFIX}openrouter-api-key`
 
@@ -327,6 +333,53 @@ async function ensureChat(key: string, instructions?: string): Promise<Chat<UIMe
   return chat
 }
 
+async function createOneOffChat(instructions?: string): Promise<OneOffChat | null> {
+  if (!isConfigured.value) return null
+
+  const store = getActiveEditorStore()
+  const transport = createTransport(store, `oneoff:${Date.now()}`, instructions)
+  const oneOffChat = new Chat<UIMessage>({ transport, messages: [] })
+
+  const subscribers = new Set<(state: { messages: UIMessage[]; status: string; error?: Error }) => void>()
+
+  const notifySubscribers = () => {
+    const state = {
+      messages: oneOffChat.messages,
+      status: oneOffChat.status,
+      error: oneOffChat.error
+    }
+    for (const callback of subscribers) {
+      callback(state)
+    }
+  }
+
+  let statusWatcherActive = true
+  const checkStatus = () => {
+    if (!statusWatcherActive) return
+    notifySubscribers()
+    if (oneOffChat.status !== 'ready' || oneOffChat.messages.length <= 1) {
+      requestAnimationFrame(checkStatus)
+    }
+  }
+
+  return {
+    sendMessage: async (options) => {
+      checkStatus()
+      return oneOffChat.sendMessage(options)
+    },
+    subscribe: (callback) => {
+      subscribers.add(callback)
+      return () => {
+        subscribers.delete(callback)
+      }
+    },
+    destroy: () => {
+      statusWatcherActive = false
+      subscribers.clear()
+    }
+  }
+}
+
 function resetChat() {
   if (currentChatStore && currentChatKey) {
     const messageKey = getChatMessageKey(currentChatStore, currentChatKey)
@@ -379,4 +432,4 @@ export function useAIChat() {
   }
 }
 
-export { resetKeyChat }
+export { resetKeyChat, createOneOffChat }
