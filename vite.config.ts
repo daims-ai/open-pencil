@@ -14,7 +14,6 @@ import { copyFileSync, existsSync, mkdirSync } from 'fs'
 
 const devAutomationAuthToken = randomUUID()
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST
 const devAutomationCorsOrigin = host ? `http://${host}:1420` : 'http://localhost:1420'
 

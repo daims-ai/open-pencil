@@ -10,7 +10,7 @@ import { computed, ref, watch } from 'vue'
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
 import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
 import { useElectronBridge, type OpenPencilConfig } from '@/bridge/electron-bridge'
-import { getActiveEditorStore, useEditorStore } from '@/stores/editor'
+import { getActiveEditorStore } from '@/stores/editor'
 import {
   ACP_AGENTS,
   AI_PROVIDERS,

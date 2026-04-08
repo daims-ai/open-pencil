@@ -58,13 +58,10 @@ const automationCleanup = ref<(() => void) | null>(null)
 const mcpCleanup = ref<(() => void) | null>(null)
 
 onMounted(async () => {
-  if (import.meta.env.DEV || IS_TAURI || !IS_FROM_DAIMS) {
-    automationCleanup.value = connectAutomation(getActiveStore).disconnect
-  }
   try {
     const mcp = await spawnMCPIfNeeded()
     mcpCleanup.value = mcp?.disconnect ?? null
-    if (import.meta.env.DEV || IS_TAURI) {
+    if (import.meta.env.DEV || IS_TAURI || !IS_FROM_DAIMS) {
       automationCleanup.value = connectAutomation(getActiveStore, mcp?.authToken ?? null).disconnect
     }
   } catch (e) {

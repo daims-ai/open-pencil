@@ -7,7 +7,7 @@ import FontPicker from '@/components/FontPicker.vue'
 import ScrubInput from '@/components/ScrubInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import Tip from '@/components/ui/Tip.vue'
-import { sectionWrapper } from '@/components/ui/section'
+import { useSectionUI } from '@/components/ui/section'
 import { loadFont } from '@/engine/fonts'
 
 import type { TextAutoResize } from '@open-pencil/core'
@@ -20,11 +20,12 @@ const resizeOptions: { value: TextAutoResize; label: string; icon: string }[] = 
   { value: 'NONE', label: 'Fixed size', icon: 'fixed' },
   { value: 'TRUNCATE', label: 'Truncate text', icon: 'truncate' }
 ]
+const sectionCls = useSectionUI()
 </script>
 
 <template>
   <TypographyControlsRoot v-slot="ctx" :load-font="loadFont">
-    <div v-if="ctx.node.value" data-test-id="typography-section" :class="sectionWrapper()">
+    <div v-if="ctx.node.value" data-test-id="typography-section" :class="sectionCls.wrapper">
       <label class="mb-1.5 block text-[11px] text-muted">{{ panels.typography }}</label>
 
       <div class="mb-1.5 flex items-center gap-1.5">
