@@ -28,7 +28,9 @@ import type { LanguageModel, UIMessage } from 'ai'
 
 export interface OneOffChat {
   sendMessage: (options: { text: string }) => Promise<void>
-  subscribe: (callback: (state: { messages: UIMessage[]; status: string; error?: Error }) => void) => () => void
+  subscribe: (
+    callback: (state: { messages: UIMessage[]; status: string; error?: Error }) => void
+  ) => () => void
   destroy: () => void
 }
 
@@ -272,13 +274,19 @@ function createTransport(
 
   // const tools = key === 'ai' ? createAITools(store) : undefined
   const tools = createAITools(store)
-  const systemPrompt = key === 'ai' ? SYSTEM_PROMPT : instructions
+  const systemPrompt =
+    key === 'ai'
+      ? SYSTEM_PROMPT
+      : key.includes('design')
+        ? `${SYSTEM_PROMPT}\n\n${instructions}`
+        : instructions
 
   const agent = new ToolLoopAgent({
     model: createModel(),
     instructions: systemPrompt,
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
+    maxRetries: 20,
     maxOutputTokens: maxOutputTokens.value,
     providerOptions: cacheProviderOptions,
     prepareCall: (options) => {
@@ -340,7 +348,9 @@ async function createOneOffChat(instructions?: string): Promise<OneOffChat | nul
   const transport = createTransport(store, `oneoff:${Date.now()}`, instructions)
   const oneOffChat = new Chat<UIMessage>({ transport, messages: [] })
 
-  const subscribers = new Set<(state: { messages: UIMessage[]; status: string; error?: Error }) => void>()
+  const subscribers = new Set<
+    (state: { messages: UIMessage[]; status: string; error?: Error }) => void
+  >()
 
   const notifySubscribers = () => {
     const state = {
