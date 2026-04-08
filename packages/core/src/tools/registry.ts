@@ -8,6 +8,7 @@ import {
   evalCode
 } from './analyze'
 import { calc } from './calc'
+import { countTextLengthTool } from './count-text-length'
 import { designToTokens, designToComponentMap } from './codegen'
 import {
   createSubAgent,
@@ -162,6 +163,7 @@ export const CORE_TOOLS: ToolDef[] = [
   isStringLengthEvenTool,
   // Text measurement
   measureTextLayout,
+  countTextLengthTool,
   // Workflow / Sub-agent
   createSubAgent,
   checkWorkflowStatus,
