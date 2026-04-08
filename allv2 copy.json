@@ -38,67 +38,67 @@
         "return `SUCCESS` if all validation pass",
         "return `ERROR` if any one validation fail"
       ]
+    }
+  },
+  "common": {
+    "colorPalette": {
+      "rectangle": ["#99005A", "#000000"],
+      "text": ["#FFFFFF", "#14b86b"]
     },
-    "common": {
-      "colorPalette": {
-        "rectangle": ["#99005A", "#000000"],
-        "text": ["#FFFFFF", "#14b86b"]
+    "typography": {
+      "fontFamily": ["Arial Black", "sans-serif"],
+      "fontSizes": ["12px", "24px", "36px"]
+    },
+    "components": {
+      "primary": {
+        "name": "primary",
+        "shape": "rectangle",
+        "fill": {
+          "type": "solid",
+          "color": "#99005A"
+        },
+        "opacity": 1,
+        "visible": true,
+        "width": 500,
+        "height": 500
       },
-      "typography": {
-        "fontFamily": ["Arial Black", "sans-serif"],
-        "fontSizes": ["12px", "24px", "36px"]
+      "secondary": {
+        "name": "secondary",
+        "shape": "rectangle",
+        "fill": {
+          "type": "image",
+          "imageUrl": "https://workflow.mzai.co.kr/uploads/images/6e526f849ef5af87c115e5fbe863e450.png",
+          "imageScaleMode": "FILL",
+          "fallbackColor": "#000000"
+        },
+        "opacity": 1,
+        "visible": true,
+        "width": 100,
+        "height": 100
       },
-      "components": {
-        "primary": {
-          "name": "primary",
-          "shape": "rectangle",
-          "fill": {
-            "type": "solid",
-            "color": "#99005A"
-          },
-          "opacity": 1,
-          "visible": true,
-          "width": 500,
-          "height": 500
+      "cta": {
+        "name": "cta",
+        "shape": "circle",
+        "fill": {
+          "type": "solid",
+          "color": "#000000"
         },
-        "secondary": {
-          "name": "secondary",
-          "shape": "rectangle",
-          "fill": {
-            "type": "image",
-            "imageUrl": "https://workflow.mzai.co.kr/uploads/images/6e526f849ef5af87c115e5fbe863e450.png",
-            "imageScaleMode": "FILL",
-            "fallbackColor": "#000000"
-          },
-          "opacity": 1,
-          "visible": true,
-          "width": 100,
-          "height": 100
+        "opacity": 1,
+        "visible": true,
+        "width": 100,
+        "height": 100
+      },
+      "headline": {
+        "name": "headline",
+        "shape": "text",
+        "font": {
+          "color": "#14b86b",
+          "family": ["Arial Black", "sans-serif"],
+          "size": "24px",
+          "lineHeight": "1.125 x font-size"
         },
-        "cta": {
-          "name": "cta",
-          "shape": "circle",
-          "fill": {
-            "type": "solid",
-            "color": "#000000"
-          },
-          "opacity": 1,
-          "visible": true,
-          "width": 100,
-          "height": 100
-        },
-        "headline": {
-          "name": "headline",
-          "shape": "text",
-          "font": {
-            "color": "#14b86b",
-            "family": ["Arial Black", "sans-serif"],
-            "size": "24px",
-            "lineHeight": "1.125 x font-size"
-          },
-          "opacity": 1,
-          "align": "left"
-        }
+        "opacity": 1,
+        "align": "left"
       }
     }
   }

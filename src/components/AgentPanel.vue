@@ -12,11 +12,7 @@ import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat, resetKeyChat, createOneOffChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
-import {
-  parseDaimsWorkflow,
-  setWorkflowContext,
-  setSubAgentExecutor
-} from '@open-pencil/core'
+import { parseDaimsWorkflow, setWorkflowContext, setSubAgentExecutor } from '@open-pencil/core'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -116,10 +112,9 @@ function buildSubAgentSystemPrompt(
   }
 
   if (agentConfig.workflow) {
-    const workflowStr =
-      Array.isArray(agentConfig.workflow)
-        ? agentConfig.workflow.join('\n')
-        : JSON.stringify(agentConfig.workflow, null, 2)
+    const workflowStr = Array.isArray(agentConfig.workflow)
+      ? agentConfig.workflow.join('\n')
+      : JSON.stringify(agentConfig.workflow, null, 2)
     parts.push(`# Workflow\n${workflowStr}`)
   }
 
