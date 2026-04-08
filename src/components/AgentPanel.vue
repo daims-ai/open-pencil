@@ -164,49 +164,51 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
 
   const commonConfig = workflow.common ?? {}
 
-  setSubAgentExecutor(async (agentKey: string, message: string, retryCount: number): Promise<string> => {
-    const agentConfig = agentsMap[agentKey]
-    if (!agentConfig) {
-      throw new Error(`Agent "${agentKey}" not found in workflow`)
-    }
+  setSubAgentExecutor(
+    async (agentKey: string, message: string, retryCount: number): Promise<string> => {
+      const agentConfig = agentsMap[agentKey]
+      if (!agentConfig) {
+        throw new Error(`Agent "${agentKey}" not found in workflow`)
+      }
 
-    const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount)
-    const subChat = await createOneOffChat(systemPrompt)
-    if (!subChat) {
-      throw new Error('Failed to create sub-agent chat')
-    }
+      const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount)
+      const subChat = await createOneOffChat(systemPrompt)
+      if (!subChat) {
+        throw new Error('Failed to create sub-agent chat')
+      }
 
-    return new Promise((resolve, reject) => {
-      let responseText = ''
+      return new Promise((resolve, reject) => {
+        let responseText = ''
 
-      const unsubscribe = subChat.subscribe((state) => {
-        const lastMessage = state.messages[state.messages.length - 1]
-        if (lastMessage?.role === 'assistant') {
-          for (const part of lastMessage.parts) {
-            if (part.type === 'text') {
-              responseText = part.text
+        const unsubscribe = subChat.subscribe((state) => {
+          const lastMessage = state.messages[state.messages.length - 1]
+          if (lastMessage?.role === 'assistant') {
+            for (const part of lastMessage.parts) {
+              if (part.type === 'text') {
+                responseText = part.text
+              }
             }
           }
-        }
 
-        if (state.status === 'ready' && state.messages.length > 1) {
+          if (state.status === 'ready' && state.messages.length > 1) {
+            unsubscribe()
+            subChat.destroy()
+            resolve(responseText)
+          } else if (state.status === 'error') {
+            unsubscribe()
+            subChat.destroy()
+            reject(new Error(state.error?.message ?? 'Sub-agent error'))
+          }
+        })
+
+        subChat.sendMessage({ text: message }).catch((e: unknown) => {
           unsubscribe()
           subChat.destroy()
-          resolve(responseText)
-        } else if (state.status === 'error') {
-          unsubscribe()
-          subChat.destroy()
-          reject(new Error(state.error?.message ?? 'Sub-agent error'))
-        }
+          reject(e)
+        })
       })
-
-      subChat.sendMessage({ text: message }).catch((e: unknown) => {
-        unsubscribe()
-        subChat.destroy()
-        reject(e)
-      })
-    })
-  })
+    }
+  )
 
   workflowAgents.value = [
     {
