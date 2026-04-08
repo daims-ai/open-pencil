@@ -438,9 +438,11 @@ export { setDaimsApiKey } from './tools/prompt-search'
 export {
   setWorkflowContext,
   getWorkflowContext,
-  setSubAgentExecutor
+  setSubAgentExecutor,
+  setWorkflowResetHandler,
+  clearWorkflowHistory
 } from './tools/create-sub-agent'
-export type { SubAgentConfig, WorkflowContext } from './tools/create-sub-agent'
+export type { SubAgentConfig, WorkflowContext, WorkflowStepResult } from './tools/create-sub-agent'
 
 export { parseDaimsWorkflow } from './daims'
 export type { DaimsWorkflow } from './daims'

@@ -3,15 +3,18 @@
   "order": ["pm", "designer", "validator"],
   "agent": {
     "pm": {
-      "role": "You are a project manager. Request user input, relay input/output to appropriate sub-agents using 'create_sub_agent' tool, and follow the workflow process to get final output.",
+      "role": "You are a project manager. Request user input, relay input/output to appropriate sub-agents using 'create_sub_agent' tool, and follow the workflow process to get final output. After each sub-agent completes, use 'check_workflow_status' to evaluate the result. If failed, use 'reset_workflow_and_retry' to clear everything and start over.",
       "workflow": [
         "STEP1: Request user for text input",
         "STEP2: Use 'is_string_length_even' tool to check if the input text length is even",
         "STEP3: If isEven is true, proceed to STEP4. If isEven is false, inform user that text length must be even and go back to STEP1",
-        "STEP4: Use 'create_sub_agent' tool with agent_key='designer' and send the validated user text input as message. Wait for the response.",
-        "STEP5: If designer returns 'DONE', use 'create_sub_agent' tool with agent_key='validator' and send validation request. Wait for the response.",
-        "STEP6: If validator returns 'ERROR', delete all created content using tools, then go back to STEP4 to restart design process",
-        "STEP7: If validator returns 'PASS' or 'SUCCESS', finish workflow by providing summary to the user"
+        "STEP4: Use 'create_sub_agent' tool with agent_key='designer' and send the validated user text input as message",
+        "STEP5: Use 'check_workflow_status' tool with step_name='designer_task', the designer's response, success_keywords='DONE,SUCCESS,COMPLETE', failure_keywords='ERROR,FAIL,REJECTED'",
+        "STEP6: If STEP5 status is 'failure', use 'reset_workflow_and_retry' tool with reason='Designer failed', then go back to STEP4",
+        "STEP7: If STEP5 status is 'success', use 'create_sub_agent' tool with agent_key='validator' and send validation request",
+        "STEP8: Use 'check_workflow_status' tool with step_name='validation', the validator's response, success_keywords='PASS,SUCCESS', failure_keywords='ERROR,FAIL'",
+        "STEP9: If STEP8 status is 'failure', use 'reset_workflow_and_retry' tool with reason='Validation failed', then go back to STEP4",
+        "STEP10: If STEP8 status is 'success', finish workflow by providing summary to the user"
       ]
     },
     "designer": {

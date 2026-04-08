@@ -9,7 +9,11 @@ import {
 } from './analyze'
 import { calc } from './calc'
 import { designToTokens, designToComponentMap } from './codegen'
-import { createSubAgent } from './create-sub-agent'
+import {
+  createSubAgent,
+  checkWorkflowStatus,
+  resetWorkflowAndRetry
+} from './create-sub-agent'
 import {
   createShape,
   render,
@@ -158,8 +162,10 @@ export const CORE_TOOLS: ToolDef[] = [
   isStringLengthEvenTool,
   // Text measurement
   measureTextLayout,
-  // Sub-agent
-  createSubAgent
+  // Workflow / Sub-agent
+  createSubAgent,
+  checkWorkflowStatus,
+  resetWorkflowAndRetry
 ]
 
 /**
