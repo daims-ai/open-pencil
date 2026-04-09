@@ -113,7 +113,7 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
         step: `create_sub_agent:${agent_key}`,
         agentKey: agent_key,
         success: true,
-        response
+        response: `${agent_key} agent has been created successfully`
       })
       return {
         success: true,
