@@ -118,15 +118,15 @@ function buildSubAgentSystemPrompt(
     parts.push(`# Role\n${agentConfig.role}`)
   }
 
-  if (agentConfig.workflow) {
-    const workflowStr = Array.isArray(agentConfig.workflow)
-      ? agentConfig.workflow.join('\n')
-      : JSON.stringify(agentConfig.workflow, null, 2)
-    parts.push(`# Workflow\n${workflowStr}`)
-  }
+  // if (agentConfig.workflow) {
+  //   const workflowStr = Array.isArray(agentConfig.workflow)
+  //     ? agentConfig.workflow.join('\n')
+  //     : JSON.stringify(agentConfig.workflow, null, 2)
+  //   parts.push(`# Workflow\n${workflowStr}`)
+  // }
 
   if (Object.keys(common).length > 0) {
-    parts.push(`# Common Configuration\n${JSON.stringify(common, null, 2)}`)
+    parts.push(`# Common rules\n${JSON.stringify(common, null, 2)}`)
   }
 
   return parts.join('\n\n')
