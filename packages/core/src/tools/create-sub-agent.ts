@@ -201,14 +201,16 @@ Returns success status and allows PM to decide next action.`,
   }
 })
 
-export const resetWorkflowAndRetry = defineTool({
-  name: 'reset_workflow_and_retry',
-  description: `Reset the entire workflow context and delete all created content to start fresh.
-Use this when a workflow step fails and you need to clear everything and retry from the beginning.
+export const resetContextAndRetry = defineTool({
+  name: 'reset_context_and_retry',
+  description: `Reset the workflow context to start fresh and prepare for retry.
+Use this when a workflow step fails and you need to clear the context and retry from the beginning.
 This will:
-1. Delete all nodes created during this workflow session
+1. Call the workflow reset handler (if configured)
 2. Clear workflow history
-3. Reset context for a fresh start`,
+3. Increment retry counter
+Note: This does NOT delete any nodes. Use delete_workflow_nodes separately before calling this if needed.
+After this tool returns, you should restart the workflow from the beginning.`,
   params: {
     reason: {
       type: 'string',
@@ -216,8 +218,7 @@ This will:
       required: true
     }
   },
-  mutates: true,
-  execute: async (figma, { reason }) => {
+  execute: async (_figma, { reason }) => {
     const historyBeforeReset = getWorkflowHistory()
 
     if (workflowResetHandler) {
@@ -231,6 +232,33 @@ This will:
       }
     }
 
+    clearWorkflowHistory()
+    retryCount++
+
+    return {
+      success: true,
+      reason,
+      retryCount,
+      previousHistory: historyBeforeReset,
+      message: `Workflow context reset complete. This is retry #${retryCount}. Ready to retry.`
+    }
+  }
+})
+
+export const deleteWorkflowNodes = defineTool({
+  name: 'delete_workflow_nodes',
+  description: `Delete all nodes on the current page that were created during this workflow session.
+Use this when you need to clear all created content before retrying or when the workflow fails.
+This will remove all top-level children from the current page.`,
+  params: {
+    reason: {
+      type: 'string',
+      description: 'The reason for deleting nodes (e.g., "Failed validation", "Starting over")',
+      required: true
+    }
+  },
+  mutates: true,
+  execute: async (figma, { reason }) => {
     const currentPage = figma.currentPage
     const nodesToDelete: string[] = []
 
@@ -245,16 +273,11 @@ This will:
       }
     }
 
-    clearWorkflowHistory()
-    retryCount++
-
     return {
       success: true,
       reason,
-      retryCount,
       deletedNodes: nodesToDelete.length,
-      previousHistory: historyBeforeReset,
-      message: `Workflow reset complete. Deleted ${nodesToDelete.length} nodes. This is retry #${retryCount}. Ready to retry.`
+      message: `Deleted ${nodesToDelete.length} nodes from the current page.`
     }
   }
 })

@@ -22,7 +22,12 @@ import {
   insertIcon,
   searchIconsTool
 } from './create'
-import { createSubAgent, checkWorkflowStatus, resetWorkflowAndRetry } from './create-sub-agent'
+import {
+  createSubAgent,
+  checkWorkflowStatus,
+  resetContextAndRetry,
+  deleteWorkflowNodes
+} from './create-sub-agent'
 import { describe } from './describe'
 import { measureTextLayout } from './measure-text-layout'
 import {
@@ -161,7 +166,8 @@ export const CORE_TOOLS: ToolDef[] = [
   // Workflow / Sub-agent
   createSubAgent,
   checkWorkflowStatus,
-  resetWorkflowAndRetry
+  resetContextAndRetry,
+  deleteWorkflowNodes
 ]
 
 /**
