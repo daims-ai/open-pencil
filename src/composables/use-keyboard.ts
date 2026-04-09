@@ -14,7 +14,13 @@ import { openFileDialog } from './use-menu'
 import type { ComputedRef } from 'vue'
 
 function isEditing(e: Event) {
-  return e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return true
+  return false
+}
+
+function hasTextSelection(): boolean {
+  const selection = window.getSelection()
+  return !!(selection && selection.toString().length > 0)
 }
 
 const PREVENT_MOD_ALT = new Set(['KeyK', 'KeyB'])
@@ -62,13 +68,13 @@ export function useKeyboard() {
   const activeElement = useActiveElement()
 
   useEventListener(window, 'copy', (e: ClipboardEvent) => {
-    if (isEditing(e)) return
+    if (isEditing(e) || hasTextSelection()) return
     e.preventDefault()
     if (e.clipboardData) store.writeCopyData(e.clipboardData)
   })
 
   useEventListener(window, 'cut', (e: ClipboardEvent) => {
-    if (isEditing(e)) return
+    if (isEditing(e) || hasTextSelection()) return
     e.preventDefault()
     if (e.clipboardData) store.writeCopyData(e.clipboardData)
     store.deleteSelected()
