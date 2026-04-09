@@ -205,7 +205,11 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
         delete copiedAgent.key
         delete copiedAgent.role
 
-        const mappedMessage = JSON.stringify({...copiedAgent, currentPageId})
+        const mappedMessage = JSON.stringify({
+          ...copiedAgent,
+          currentPageId,
+          ...(message ? { receivedMessage: message } : {})
+        })
         subChat.sendMessage({ text: mappedMessage }).catch((e: unknown) => {
           unsubscribe()
           subChat.destroy()
