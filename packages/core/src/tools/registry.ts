@@ -8,8 +8,8 @@ import {
   evalCode
 } from './analyze'
 import { calc } from './calc'
-import { measureTextLayout } from './measure-text-layout'
 import { designToTokens, designToComponentMap } from './codegen'
+import { countTextLengthTool } from './count-text-length'
 import {
   createShape,
   render,
@@ -22,7 +22,14 @@ import {
   insertIcon,
   searchIconsTool
 } from './create'
+import {
+  createSubAgent,
+  checkWorkflowStatus,
+  resetContextAndRetry,
+  deleteWorkflowNodes
+} from './create-sub-agent'
 import { describe } from './describe'
+import { measureTextLayout } from './measure-text-layout'
 import {
   setFill,
   setStroke,
@@ -155,6 +162,12 @@ export const CORE_TOOLS: ToolDef[] = [
   getPrompt,
   // Text measurement
   measureTextLayout,
+  countTextLengthTool,
+  // Workflow / Sub-agent
+  createSubAgent,
+  checkWorkflowStatus,
+  resetContextAndRetry,
+  deleteWorkflowNodes
 ]
 
 /**
@@ -258,5 +271,5 @@ export const ALL_TOOLS: ToolDef[] = [
   getPrompt,
   searchAndApplyPrompt,
   // Text measurement
-  measureTextLayout,
+  measureTextLayout
 ]

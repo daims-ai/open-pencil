@@ -5,7 +5,7 @@ import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { useLocalStorage } from '@vueuse/core'
 import { DirectChatTransport, stepCountIs, ToolLoopAgent } from 'ai'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
 import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
@@ -25,6 +25,14 @@ import {
 
 import type { ACPAgentID, AIProviderID } from '@open-pencil/core'
 import type { LanguageModel, UIMessage } from 'ai'
+
+export interface OneOffChat {
+  sendMessage: (options: { text: string }) => Promise<void>
+  subscribe: (
+    callback: (state: { messages: UIMessage[]; status: string; error?: Error }) => void
+  ) => () => void
+  destroy: () => void
+}
 
 const STORAGE_PREFIX = 'open-pencil:'
 const LEGACY_KEY_STORAGE = `${STORAGE_PREFIX}openrouter-api-key`
@@ -62,7 +70,6 @@ const customAPIType = useLocalStorage<'completions' | 'responses'>(
 const maxOutputTokens = useLocalStorage(`${STORAGE_PREFIX}ai-max-output-tokens`, 16384)
 const pexelsApiKey = useLocalStorage(`${STORAGE_PREFIX}pexels-api-key`, '')
 const unsplashAccessKey = useLocalStorage(`${STORAGE_PREFIX}unsplash-access-key`, '')
-const activeTab = ref<'design' | 'code' | 'ai'>('design')
 
 const providerDef = computed(
   () => AI_PROVIDERS.find((p) => p.id === providerID.value) ?? AI_PROVIDERS[0]
@@ -81,12 +88,18 @@ const isConfigured = computed(() => {
 
 let transportDirty = false
 let currentChatStore: ReturnType<typeof getActiveEditorStore> | null = null
-let currentChatMessages = new WeakMap<ReturnType<typeof getActiveEditorStore>, UIMessage[]>()
+let currentChatKey: string | null = null
+const chatMessages = new Map<string, UIMessage[]>()
+
+function getChatMessageKey(store: ReturnType<typeof getActiveEditorStore>, key: string): string {
+  return `${store.state.currentPageId}:${key}`
+}
 
 function markTransportDirty() {
   transportDirty = true
   currentChatStore = null
-  currentChatMessages = new WeakMap()
+  currentChatKey = null
+  chatMessages.clear()
 }
 
 watch(
@@ -137,7 +150,6 @@ async function initElectronConfig() {
   try {
     const config = await waitForExternalConfig()
     applyExternalConfig(config)
-    activeTab.value = 'ai'
     setAPIKey(config.apiKey)
   } catch (e) {
     console.error('[use-chat] Failed to get external config:', e)
@@ -248,20 +260,33 @@ async function createACPTransport() {
   return transport
 }
 
-function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
+function createTransport(
+  store: ReturnType<typeof getActiveEditorStore>,
+  key: string,
+  instructions?: string
+) {
   if (overrideTransport) return overrideTransport()
 
   void acpTransportInstance?.destroy()
   acpTransportInstance = null
 
-  const tools = createAITools(store)
   const cacheProviderOptions = supportsAnthropicCaching() ? ANTHROPIC_CACHE_CONTROL : undefined
+
+  // const tools = key === 'ai' ? createAITools(store) : undefined
+  const tools = createAITools(store)
+  const systemPrompt =
+    key === 'ai'
+      ? SYSTEM_PROMPT
+      : key.includes('design')
+        ? `${SYSTEM_PROMPT}\n\n${instructions}`
+        : instructions
 
   const agent = new ToolLoopAgent({
     model: createModel(),
-    instructions: SYSTEM_PROMPT,
+    instructions: systemPrompt,
     tools,
     stopWhen: stepCountIs(MAX_AGENT_STEPS),
+    maxRetries: 20,
     maxOutputTokens: maxOutputTokens.value,
     providerOptions: cacheProviderOptions,
     prepareCall: (options) => {
@@ -289,31 +314,103 @@ function createTransport(store: ReturnType<typeof getActiveEditorStore>) {
   return new DirectChatTransport({ agent })
 }
 
-async function ensureChat(): Promise<Chat<UIMessage> | null> {
+async function ensureChat(key: string, instructions?: string): Promise<Chat<UIMessage> | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
-  if (currentChatStore && chat) {
-    currentChatMessages.set(currentChatStore, chat.messages)
+  const messageKey = getChatMessageKey(store, key)
+
+  if (currentChatStore && chat && currentChatKey) {
+    const oldKey = getChatMessageKey(currentChatStore, currentChatKey)
+    chatMessages.set(oldKey, chat.messages)
   }
 
-  if (!chat || transportDirty || currentChatStore !== store) {
-    const messages = currentChatMessages.get(store)
-    const transport = isACPProvider.value ? await createACPTransport() : createTransport(store)
+  const needsNewChat =
+    !chat || transportDirty || currentChatStore !== store || currentChatKey !== key
+
+  if (needsNewChat) {
+    const messages = chatMessages.get(messageKey) ?? []
+    const transport = isACPProvider.value
+      ? await createACPTransport()
+      : createTransport(store, key, instructions)
     chat = new Chat<UIMessage>({ transport, messages })
     currentChatStore = store
+    currentChatKey = key
     transportDirty = false
   }
   return chat
 }
 
+async function createOneOffChat(instructions?: string): Promise<OneOffChat | null> {
+  if (!isConfigured.value) return null
+
+  const store = getActiveEditorStore()
+  const transport = createTransport(store, `oneoff:${Date.now()}`, instructions)
+  const oneOffChat = new Chat<UIMessage>({ transport, messages: [] })
+
+  const subscribers = new Set<
+    (state: { messages: UIMessage[]; status: string; error?: Error }) => void
+  >()
+
+  const notifySubscribers = () => {
+    const state = {
+      messages: oneOffChat.messages,
+      status: oneOffChat.status,
+      error: oneOffChat.error
+    }
+    for (const callback of subscribers) {
+      callback(state)
+    }
+  }
+
+  let statusWatcherActive = true
+  const checkStatus = () => {
+    if (!statusWatcherActive) return
+    notifySubscribers()
+    if (oneOffChat.status !== 'ready' || oneOffChat.messages.length <= 1) {
+      requestAnimationFrame(checkStatus)
+    }
+  }
+
+  return {
+    sendMessage: async (options) => {
+      checkStatus()
+      return oneOffChat.sendMessage(options)
+    },
+    subscribe: (callback) => {
+      subscribers.add(callback)
+      return () => {
+        subscribers.delete(callback)
+      }
+    },
+    destroy: () => {
+      statusWatcherActive = false
+      subscribers.clear()
+    }
+  }
+}
+
 function resetChat() {
-  if (currentChatStore) {
-    currentChatMessages.delete(currentChatStore)
+  if (currentChatStore && currentChatKey) {
+    const messageKey = getChatMessageKey(currentChatStore, currentChatKey)
+    chatMessages.delete(messageKey)
   }
   chat = null
   currentChatStore = null
+  currentChatKey = null
   transportDirty = false
+}
+
+function resetKeyChat(key: string) {
+  if (currentChatStore) {
+    const messageKey = getChatMessageKey(currentChatStore, key)
+    chatMessages.delete(messageKey)
+  }
+  if (currentChatKey === key) {
+    chat = null
+    currentChatKey = null
+  }
+  transportDirty = true
 }
 
 if (IS_BROWSER) {
@@ -339,9 +436,10 @@ export function useAIChat() {
     maxOutputTokens,
     pexelsApiKey,
     unsplashAccessKey,
-    activeTab,
     isConfigured,
     ensureChat,
     resetChat
   }
 }
+
+export { resetKeyChat, createOneOffChat }

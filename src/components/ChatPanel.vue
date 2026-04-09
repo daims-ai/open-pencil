@@ -10,7 +10,7 @@ import ACPPermissionDialog from '@/components/chat/ACPPermissionDialog.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
 import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
-import { useAIChat } from '@/composables/use-chat'
+import { useAIChat, resetKeyChat } from '@/composables/use-chat'
 import { toast } from '@/utils/toast'
 import { useI18n } from '@open-pencil/vue'
 
@@ -24,12 +24,16 @@ const { dialogs } = useI18n()
 
 const chat = ref<Chat<UIMessage> | null>(null)
 
-ensureChat().then((c) => {
-  if (c) chat.value = markRaw(c)
-})
+// Only initialize chat when on the AI tab
+if (activeTab.value?.id === 'ai') {
+  ensureChat('ai').then((c) => {
+    if (c) chat.value = markRaw(c)
+  })
+}
 const messagesEnd = ref<HTMLDivElement>()
 const debugCopied = ref(false)
 const acpLogCopied = ref(false)
+const initError = ref<string | null>(null)
 
 const messages = computed(() => chat.value?.messages ?? [])
 const status = computed(() => chat.value?.status ?? 'ready')
@@ -62,18 +66,23 @@ function scrollToBottom() {
 }
 
 watch(messages, scrollToBottom, { deep: true })
+
 watch(
   () => activeTab.value?.id,
-  async () => {
-    const nextChat = await ensureChat()
-    chat.value = nextChat ? markRaw(nextChat) : null
+  (newTabId) => {
+    if (newTabId === 'ai') {
+      ensureChat('ai').then((c) => {
+        if (c) chat.value = markRaw(c)
+      })
+    }
   }
 )
 
 async function handleSubmit(text: string) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
-    const c = await ensureChat()
+    initError.value = null
+    const c = await ensureChat('ai')
     if (c) chat.value = markRaw(c)
   } catch (e) {
     console.error('Failed to initialize chat:', e)
@@ -110,7 +119,7 @@ async function handleCopyAcpLog() {
 
 function handleClearChat() {
   chat.value = null
-  resetChat()
+  resetKeyChat('ai')
   clearToolLogEntries()
   clearAcpDebugLog()
 }

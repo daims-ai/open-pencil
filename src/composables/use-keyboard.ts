@@ -1,7 +1,6 @@
 import { useActiveElement, useEventListener, useMagicKeys, whenever } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { useAIChat } from '@/composables/use-chat'
 import { TOOL_SHORTCUTS, useEditorStore } from '@/stores/editor'
 import { closeTab, createTab, activeTab as activeTabRef } from '@/stores/tabs'
 import {
@@ -15,7 +14,13 @@ import { openFileDialog } from './use-menu'
 import type { ComputedRef } from 'vue'
 
 function isEditing(e: Event) {
-  return e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return true
+  return false
+}
+
+function hasTextSelection(): boolean {
+  const selection = window.getSelection()
+  return !!(selection && selection.toString().length > 0)
 }
 
 const PREVENT_MOD_ALT = new Set(['KeyK', 'KeyB'])
@@ -57,20 +62,19 @@ function shouldPreventDefault(e: KeyboardEvent, hasPenState: boolean): boolean {
 }
 
 export function useKeyboard() {
-  const { activeTab } = useAIChat()
   const store = useEditorStore()
   const { isMobile } = useViewportKind()
   const { runCommand } = useEditorCommands()
   const activeElement = useActiveElement()
 
   useEventListener(window, 'copy', (e: ClipboardEvent) => {
-    if (isEditing(e)) return
+    if (isEditing(e) || hasTextSelection()) return
     e.preventDefault()
     if (e.clipboardData) store.writeCopyData(e.clipboardData)
   })
 
   useEventListener(window, 'cut', (e: ClipboardEvent) => {
-    if (isEditing(e)) return
+    if (isEditing(e) || hasTextSelection()) return
     e.preventDefault()
     if (e.clipboardData) store.writeCopyData(e.clipboardData)
     store.deleteSelected()
@@ -185,7 +189,7 @@ export function useKeyboard() {
         store.state.mobileDrawerSnap = 'half'
       }
     } else {
-      activeTab.value = activeTab.value === 'ai' ? 'design' : 'ai'
+      store.state.activeRibbonTab = store.state.activeRibbonTab === 'ai' ? 'panels' : 'ai'
     }
   })
   whenever(mod('keyw'), () => {

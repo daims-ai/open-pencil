@@ -435,3 +435,15 @@ export {
 } from './tools/stock-photo'
 export type { StockPhotoProvider, StockPhotoResult } from './tools/stock-photo'
 export { setDaimsApiKey } from './tools/prompt-search'
+export {
+  setWorkflowContext,
+  getWorkflowContext,
+  setSubAgentExecutor,
+  setWorkflowResetHandler,
+  clearWorkflowHistory,
+  getRetryCount
+} from './tools/create-sub-agent'
+export type { SubAgentConfig, WorkflowContext, WorkflowStepResult } from './tools/create-sub-agent'
+
+export { parseDaimsWorkflow } from './daims'
+export type { DaimsWorkflow } from './daims'

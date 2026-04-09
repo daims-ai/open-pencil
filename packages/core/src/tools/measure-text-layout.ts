@@ -1,6 +1,7 @@
+import { prepareWithSegments, walkLineRanges, layoutWithLines } from '@chenglou/pretext'
+
 import { DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE } from '../constants'
 import { defineTool } from './schema'
-import { prepareWithSegments, walkLineRanges, layoutWithLines } from '@chenglou/pretext'
 
 function buildFontString(
   fontSize: number,
@@ -21,7 +22,8 @@ export const measureTextLayout = defineTool({
     id: { type: 'string', description: 'Node ID', required: true },
     maxWidth: {
       type: 'number',
-      description: 'Optional max width override. If not provided, uses node width or infinite for auto-width text.',
+      description:
+        'Optional max width override. If not provided, uses node width or infinite for auto-width text.',
       required: false
     }
   },
@@ -44,7 +46,9 @@ export const measureTextLayout = defineTool({
       const layoutWidth =
         maxWidth !== undefined
           ? maxWidth
-          : (raw.textAutoResize === 'WIDTH_AND_HEIGHT' ? 1e6 : (raw.width || 1e6))
+          : raw.textAutoResize === 'WIDTH_AND_HEIGHT'
+            ? 1e6
+            : raw.width || 1e6
 
       const prepared = prepareWithSegments(raw.text, font)
 

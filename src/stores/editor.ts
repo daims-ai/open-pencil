@@ -67,7 +67,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
       showUI: boolean
       showRulers: boolean
       showRemoteCursors: boolean
-      activeRibbonTab: 'panels' | 'code' | 'ai'
+      activeRibbonTab: 'panels' | 'code' | 'ai' | 'agent'
       panelMode: 'layers' | 'design'
       actionToast: string | null
       mobileDrawerSnap: 'closed' | 'half' | 'full'
@@ -279,7 +279,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
   function walkChainToEnd(segments: { start: number; end: number }[], start: number): number {
     let current = start
     const visited = new Set<number>([start])
-    for (; ;) {
+    for (;;) {
       let found = false
       for (const seg of segments) {
         let next = -1
@@ -310,7 +310,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     orderedVertices.push(absVertices[current])
     visited.add(current)
 
-    for (; ;) {
+    for (;;) {
       let foundSeg = false
       for (const seg of absSegments) {
         let next = -1

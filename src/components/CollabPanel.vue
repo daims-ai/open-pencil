@@ -92,7 +92,6 @@ async function handleDone() {
   await store.saveFigFile()
   postMessageToParent('open-pencil:done', {})
 }
-
 </script>
 
 <template>

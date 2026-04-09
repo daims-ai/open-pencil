@@ -218,5 +218,12 @@ export function createNodeActions(ctx: EditorContext) {
     ctx.requestRender()
   }
 
-  return { updateNode, updateNodeWithUndo, setLayoutMode, bindVariable, unbindVariable, resizeTextNode }
+  return {
+    updateNode,
+    updateNodeWithUndo,
+    setLayoutMode,
+    bindVariable,
+    unbindVariable,
+    resizeTextNode
+  }
 }
