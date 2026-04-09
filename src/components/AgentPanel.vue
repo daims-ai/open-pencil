@@ -165,7 +165,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
   const commonConfig = workflow.common ?? {}
 
   setSubAgentExecutor(
-    async (agentKey: string, message: string, retryCount: number): Promise<string> => {
+    async (agentKey: string, message: string, retryCount: number, currentPageId: string): Promise<string> => {
       const agentConfig = agentsMap[agentKey]
       if (!agentConfig) {
         throw new Error(`Agent "${agentKey}" not found in workflow`)
@@ -205,8 +205,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
         delete copiedAgent.key
         delete copiedAgent.role
 
-        const mappedMessage = JSON.stringify(copiedAgent)
-
+        const mappedMessage = JSON.stringify({...copiedAgent, currentPageId})
         subChat.sendMessage({ text: mappedMessage }).catch((e: unknown) => {
           unsubscribe()
           subChat.destroy()

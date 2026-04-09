@@ -21,7 +21,7 @@ export interface WorkflowStepResult {
 
 let currentWorkflowContext: WorkflowContext | null = null
 let subAgentExecutor:
-  | ((agentKey: string, message: string, retryCount: number) => Promise<string>)
+  | ((agentKey: string, message: string, retryCount: number, currentPageId: string) => Promise<string>)
   | null = null
 let workflowHistory: WorkflowStepResult[] = []
 let workflowResetHandler: (() => Promise<void>) | null = null
@@ -107,8 +107,10 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
       }
     }
 
+    const currentPageId = _figma.currentPageId
+
     try {
-      const response = await subAgentExecutor(agent_key, message, retryCount)
+      const response = await subAgentExecutor(agent_key, message, retryCount, currentPageId)
       addWorkflowStepResult({
         step: `create_sub_agent:${agent_key}`,
         agentKey: agent_key,
