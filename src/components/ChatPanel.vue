@@ -33,6 +33,7 @@ if (activeTab.value?.id === 'ai') {
 const messagesEnd = ref<HTMLDivElement>()
 const debugCopied = ref(false)
 const acpLogCopied = ref(false)
+const initError = ref<string | null>(null)
 
 const messages = computed(() => chat.value?.messages ?? [])
 const status = computed(() => chat.value?.status ?? 'ready')
@@ -81,7 +82,7 @@ async function handleSubmit(text: string) {
   if (status.value === 'streaming' || status.value === 'submitted') return
   try {
     initError.value = null
-    const c = await ensureChat()
+    const c = await ensureChat('ai')
     if (c) chat.value = markRaw(c)
   } catch (e) {
     console.error('Failed to initialize chat:', e)
