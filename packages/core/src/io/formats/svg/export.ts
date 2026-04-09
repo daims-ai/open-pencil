@@ -1,6 +1,5 @@
-import { computeContentBounds } from '@open-pencil/core/io/formats/raster'
-
-import { resolveNodeTextDirection } from '../../../direction'
+import { resolveNodeTextDirection } from '../../../text/direction'
+import { computeContentBounds } from '../raster'
 import {
   nextDefId,
   formatColor,
@@ -24,15 +23,15 @@ export { geometryBlobToSVGPath, vectorNetworkToSVGPaths } from './paths'
 
 import { svg, renderSVGNode } from './node'
 
-import type { SVGExportContext } from './defs'
-import type { SVGNode } from './node'
 import type {
   SceneGraph,
   SceneNode,
   Fill,
   Stroke,
   CharacterStyleOverride
-} from '@open-pencil/core/scene-graph'
+} from '../../../scene-graph'
+import type { SVGExportContext } from './defs'
+import type { SVGNode } from './node'
 
 // --- Node rendering ---
 

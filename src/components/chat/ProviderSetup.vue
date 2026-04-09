@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 
 import ProviderSelectField from '@/components/chat/ProviderSelectField.vue'
-import { uiInput } from '@/components/ui/input'
+import { useInputUI } from '@/components/ui/input'
 import { useAIChat } from '@/composables/use-chat'
 import { ACP_AGENTS } from '@open-pencil/core'
 import { useI18n } from '@open-pencil/vue'
@@ -50,7 +50,7 @@ function save() {
         type="text"
         data-test-id="provider-base-url"
         :placeholder="dialogs.baseURLPlaceholder"
-        :class="uiInput()"
+        :class="useInputUI().base"
       />
 
       <!-- Custom model ID (OpenAI-compatible only) -->
@@ -60,7 +60,7 @@ function save() {
         type="text"
         data-test-id="provider-custom-model"
         :placeholder="dialogs.modelIDPlaceholder"
-        :class="uiInput()"
+        :class="useInputUI().base"
       />
 
       <input
@@ -68,7 +68,7 @@ function save() {
         type="password"
         data-test-id="api-key-input"
         :placeholder="providerDef.keyPlaceholder"
-        :class="uiInput()"
+        :class="useInputUI().base"
       />
 
       <button
@@ -86,11 +86,21 @@ function save() {
       <ProviderSelectField test-id="provider-selector" />
 
       <p class="text-center text-[10px] leading-relaxed text-muted">
-        Uses your existing {{ acpAgent?.name }} subscription. Make sure
-        <code class="rounded bg-input px-1 py-0.5 font-mono text-[9px]">{{
-          acpAgent?.command
-        }}</code>
-        is installed and authenticated.
+        Uses your existing {{ acpAgent?.name }} subscription.
+        <template v-if="acpAgent?.installCommand">
+          Install it with
+          <code class="rounded bg-input px-1 py-0.5 font-mono text-[9px]">{{
+            acpAgent.installCommand
+          }}</code>
+          and sign in before sending your first message.
+        </template>
+        <template v-else>
+          Make sure
+          <code class="rounded bg-input px-1 py-0.5 font-mono text-[9px]">{{
+            acpAgent?.command
+          }}</code>
+          is installed and authenticated.
+        </template>
       </p>
     </div>
 

@@ -52,10 +52,9 @@ const hexColor = computed(() => colorToHex(color))
 const fieldOptions = computed(
   () =>
     okhcl?.fieldOptions ?? [
-      { value: 'hex' as const, label: panels.value.colorFormatHex },
-      { value: 'rgb' as const, label: panels.value.colorFormatRgb },
-      { value: 'hsl' as const, label: panels.value.colorFormatHsl },
-      { value: 'hsb' as const, label: panels.value.colorFormatHsb }
+      { value: 'rgb', label: panels.value.colorFormatRgb },
+      { value: 'hsl', label: panels.value.colorFormatHsl },
+      { value: 'hsb', label: panels.value.colorFormatHsb }
     ]
 )
 const localFieldFormat = ref<'hex' | 'rgb' | 'hsl' | 'hsb'>('hex')

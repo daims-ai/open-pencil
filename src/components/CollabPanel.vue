@@ -52,7 +52,7 @@ watch(
 function copyLink() {
   if (!shareUrl.value) return
   copy(shareUrl.value)
-  toast.show('Link copied to clipboard')
+  toast.info('Link copied to clipboard')
 }
 
 function onShare() {
@@ -61,7 +61,7 @@ function onShare() {
   const roomId = collab.shareCurrentDoc()
   router.push(`/share/${roomId}`)
   copy(`${window.location.origin}/share/${roomId}`)
-  toast.show('Link copied to clipboard')
+  toast.info('Link copied to clipboard')
   popoverOpen.value = false
 }
 

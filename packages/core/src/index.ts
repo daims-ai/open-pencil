@@ -144,7 +144,7 @@ export {
   getStrokeOkHCL,
   type OkHCLColor,
   type OkHCLPayload
-} from './okhcl'
+} from './color/okhcl'
 export type {
   InfoResult,
   PageItem,
@@ -169,8 +169,8 @@ export type {
   AnalyzeClustersResult,
   TypographyStyle
 } from './rpc'
-export { SkiaRenderer, type RenderOverlays } from './renderer/index'
-export { LabelCache, type CachedSection, type CachedComponent } from './renderer/label-cache'
+export { SkiaRenderer, type RenderOverlays } from './canvas'
+export { LabelCache, type CachedSection, type CachedComponent } from './canvas/label-cache'
 export {
   RenderProfiler,
   FrameStats,
@@ -191,7 +191,7 @@ export {
   resolveNodeLayoutDirection,
   isLogicalTextAlignStart,
   isLogicalTextAlignEnd
-} from './direction'
+} from './text/direction'
 export {
   FONT_WEIGHT_NAMES,
   collectFontKeys,
@@ -218,8 +218,8 @@ export {
   fetchBundledFont,
   setDaimsFontProvider,
   getDaimsFontProvider
-} from './fonts'
-export type { DaimsFontProvider } from './fonts'
+} from './text/fonts'
+export type { DaimsFontProvider } from './text/fonts'
 export {
   parseColor,
   normalizeColor,
@@ -244,7 +244,7 @@ export {
   type ColorIntentSpace,
   type ColorPreviewOptions,
   type ResolvedRenderColor
-} from './color-management'
+} from './color/management'
 export {
   vectorNetworkToPath,
   geometryBlobToPath,
@@ -274,10 +274,10 @@ export {
   type CubicPoints,
   type NearestResult,
   type NetworkNearestResult
-} from './bezier-math'
-export { computeSelectionBounds, computeSnap, type SnapGuide } from './snap'
-export { UndoManager, type UndoEntry } from './undo'
-export { TextEditor, type TextCaret, type TextEditorState } from './text-editor'
+} from './vector/bezier'
+export { computeSelectionBounds, computeSnap, type SnapGuide } from './scene-graph/snap'
+export { UndoManager, type UndoEntry } from './scene-graph/undo'
+export { TextEditor, type TextCaret, type TextEditorState } from './text/editor'
 export {
   getStyleAt,
   applyStyleToRange,
@@ -288,7 +288,7 @@ export {
   toggleDecorationInRange,
   adjustRunsForInsert,
   adjustRunsForDelete
-} from './style-runs'
+} from './text/style-runs'
 export {
   renderNodesToImage,
   renderThumbnail,
@@ -316,7 +316,7 @@ export {
   type IconData,
   type IconPath,
   type IconSearchResult
-} from './iconify'
+} from './icons'
 export { exportFigFile, compressFigData, compressFigDataSync } from './io/formats/fig/export'
 export {
   FIG_KIWI_DEFAULT_VERSION,
@@ -362,7 +362,7 @@ export {
   sceneNodeToJSX,
   selectionToJSX,
   type JSXFormat
-} from './render'
+} from './design-jsx'
 export {
   parseFigmaClipboard,
   importClipboardNodes,
