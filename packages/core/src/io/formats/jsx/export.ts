@@ -9,7 +9,6 @@ import {
   borderRadiusToTw,
   opacityToTw
 } from '../../../design-jsx/tailwind'
-
 import { resolveNodeTextDirection } from '../../../text/direction'
 
 import type {

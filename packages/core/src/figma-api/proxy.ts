@@ -886,9 +886,9 @@ export class FigmaNodeProxy {
   }
 
   get children(): FigmaNodeProxy[] {
-    return this[INTERNAL_GRAPH].getChildren(this[INTERNAL_ID]).map((c) =>
-      this[INTERNAL_API].wrapNode(c.id)
-    )
+    return this[INTERNAL_GRAPH]
+      .getChildren(this[INTERNAL_ID])
+      .map((c) => this[INTERNAL_API].wrapNode(c.id))
   }
 
   appendChild(child: FigmaNodeProxy): void {
@@ -947,7 +947,8 @@ export class FigmaNodeProxy {
   }
 
   findChildren(callback?: (node: FigmaNodeProxy) => boolean): FigmaNodeProxy[] {
-    return this[INTERNAL_GRAPH].getChildren(this[INTERNAL_ID])
+    return this[INTERNAL_GRAPH]
+      .getChildren(this[INTERNAL_ID])
       .map((c) => this[INTERNAL_API].wrapNode(c.id))
       .filter((proxy) => !callback || callback(proxy))
   }

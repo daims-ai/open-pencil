@@ -1,6 +1,7 @@
 import { deflateSync } from 'fflate'
 
 import { CANVAS_BG_COLOR, IS_BROWSER, IS_TAURI } from '../../../constants'
+import { computeImageHash } from '../../../figma-api'
 import { initCodec, getCompiledSchema, getSchemaBytes } from '../../../kiwi/codec'
 import { stringToGuid } from '../../../kiwi/convert'
 import {
@@ -14,7 +15,6 @@ import {
 import { renderThumbnail } from '../raster'
 import { compressFigDataSync } from './compress'
 
-import { computeImageHash } from '../../../figma-api'
 import type { SkiaRenderer } from '../../../canvas'
 import type { NodeChange } from '../../../kiwi/codec'
 import type { SceneGraph, VariableValue } from '../../../scene-graph'
