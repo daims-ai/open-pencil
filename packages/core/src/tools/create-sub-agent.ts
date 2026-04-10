@@ -283,3 +283,17 @@ This will remove all top-level children from the current page.`,
     }
   }
 })
+
+export const getCurrentPageChildren = defineTool({
+  name: 'get_current_page_children',
+  description: 'Get the children of the current page.',
+  params: {},
+  execute: async (figma) => {
+    const currentPage = figma.currentPage
+
+    return {
+      success: true,
+      children: currentPage.children
+    }
+  }
+})

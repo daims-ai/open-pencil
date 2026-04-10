@@ -20,19 +20,19 @@ const store = useEditorStore()
   >
     <AppMenu />
     <SplitterGroup direction="vertical" auto-save-id="layers-layout" class="flex-1 overflow-hidden">
-      <!-- <SplitterPanel
+      <SplitterPanel
         :default-size="30"
         :min-size="10"
         :max-size="60"
         class="flex flex-col overflow-hidden"
       >
         <PagesPanel />
-      </SplitterPanel> -->
-      <!-- <SplitterResizeHandle class="group relative z-10 -my-1 h-2 cursor-row-resize">
+      </SplitterPanel>
+      <SplitterResizeHandle class="group relative z-10 -my-1 h-2 cursor-row-resize">
         <div
           class="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border"
         />
-      </SplitterResizeHandle> -->
+      </SplitterResizeHandle>
       <SplitterPanel :default-size="70" :min-size="20" class="flex flex-col overflow-hidden">
         <TabsRoot v-model="store.state.leftPanelTab" class="flex min-h-0 flex-1 flex-col">
           <TabsList data-test-id="layers-header" class="flex shrink-0 items-center gap-2 px-3 py-2">

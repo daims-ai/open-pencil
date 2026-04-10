@@ -26,7 +26,8 @@ import {
   createSubAgent,
   checkWorkflowStatus,
   resetContextAndRetry,
-  deleteWorkflowNodes
+  deleteWorkflowNodes,
+  getCurrentPageChildren
 } from './create-sub-agent'
 import { describe } from './describe'
 import { measureTextLayout } from './measure-text-layout'
@@ -167,7 +168,8 @@ export const CORE_TOOLS: ToolDef[] = [
   createSubAgent,
   checkWorkflowStatus,
   resetContextAndRetry,
-  deleteWorkflowNodes
+  deleteWorkflowNodes,
+  getCurrentPageChildren
 ]
 
 /**

@@ -95,7 +95,7 @@ function handlePageDblClick(
             @dblclick="handlePageDblClick(pg, renamePage)"
           >
             <icon-lucide-file class="size-3 shrink-0" />
-            <span class="truncate">{{ pg.name }}</span>
+            <span class="truncate">{{ pg.name }} ({{ pg.id }})</span>
           </button>
         </div>
       </div>

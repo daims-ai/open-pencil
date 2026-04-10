@@ -75,7 +75,9 @@ const subMenuCls = useMenuUI({ content: 'min-w-44' })
   <div class="shrink-0 border-b border-border">
     <div class="flex items-center gap-2 px-2 py-1.5">
       <img data-test-id="app-logo" src="/favicon-32.png" class="size-4" alt="OpenPencil" />
-      <input
+      <div class="flex-1">
+      </div>
+      <!-- <input
         v-if="editingName"
         :ref="(el) => setNameInputRef(el as HTMLInputElement | null)"
         data-test-id="app-document-name-input"
@@ -91,7 +93,7 @@ const subMenuCls = useMenuUI({ content: 'min-w-44' })
         class="min-w-0 flex-1 cursor-default truncate rounded px-1 py-0.5 text-xs text-surface hover:bg-hover"
         @dblclick="startRename"
         >{{ store.state.documentName }}</span
-      >
+      > -->
       <Tip :label="`${t.toggleUI} (${mod}\\)`">
         <button
           data-test-id="app-toggle-ui"
