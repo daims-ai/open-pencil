@@ -2,11 +2,41 @@
 
 ## Unreleased
 
+## 0.11.6 — 2026-04-08
+
 ### Fixes
 
-- Show actionable ACP install errors in the chat panel when Claude Code, Codex, or Gemini CLI is selected but the required local CLI is missing
-- Fix inline layer rename so clearing the name falls back to the default node name, and Backspace/Delete inside rename inputs no longer delete the layer
-- Fix rotated frame hit testing, hover highlights, and selection overlays so child hover/click areas, frame title labels, and size pills stay aligned during rotation and live rotation preview
+- Switch `@open-pencil/core` build from `tsgo` + `fix-esm-import-path` to `tsdown` — fixes bare directory imports that broke Node.js and Bun consumers
+
+## 0.11.5 — 2026-04-08
+
+### Fixes
+
+- Fix published npm packages resolving to TypeScript source instead of compiled JavaScript — `publishConfig.exports` overrides are now applied during CI publish
+- Fix Windows CI build failures caused by backslash file paths in custom lint rules
+
+## 0.11.4 — 2026-04-08
+
+### Fixes
+
+- Fix `@open-pencil/core` published package containing stale import paths from before the domain module restructuring — CLI and MCP installs from npm now resolve correctly
+- Add `save_file` MCP tool for saving the current document to disk
+- Clipboard text export now writes richer v4 `derivedTextData` payloads with glyph outlines for better paste fidelity
+
+## 0.11.3 — 2026-04-08
+
+### Fixes
+
+- Show actionable install errors in the chat panel when a required local AI CLI is missing
+- Fix inline layer rename so clearing the name restores the default name, and Backspace/Delete inside rename inputs no longer delete the layer
+- Fix rotated frame hit testing, hover highlights, and selection overlays so interactive areas and overlay labels stay aligned during rotation
+- Fix text edit undo so it restores both the original text and `styleRuns`
+- Pressing Enter with a selected text node now starts text editing and selects all text
+- Fix `ScrubInput` Enter handling so committing a value no longer triggers a second blur-based commit that overwrites it
+- Show the auto-layout panel for `COMPONENT`, `COMPONENT_SET`, and `INSTANCE` nodes
+- Fix missing layout direction icons in the auto-layout controls
+- Fix nested text selection inside gradient cards
+- Unify the size control into a single inline sizing input/dropdown with shorter localized labels to prevent overflow
 
 ## 0.11.2 — 2026-03-30
 

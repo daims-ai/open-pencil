@@ -5,7 +5,7 @@ import { Chat } from '@ai-sdk/vue'
 import { createOpenRouter } from '@openrouter/ai-sdk-provider'
 import { useLocalStorage } from '@vueuse/core'
 import { DirectChatTransport, stepCountIs, ToolLoopAgent } from 'ai'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import SYSTEM_PROMPT from '@/ai/system-prompt.md?raw'
 import { MAX_AGENT_STEPS, createAITools, recordStepUsage, resetRunSteps } from '@/ai/tools'
@@ -70,6 +70,7 @@ const customAPIType = useLocalStorage<'completions' | 'responses'>(
 const maxOutputTokens = useLocalStorage(`${STORAGE_PREFIX}ai-max-output-tokens`, 16384)
 const pexelsApiKey = useLocalStorage(`${STORAGE_PREFIX}pexels-api-key`, '')
 const unsplashAccessKey = useLocalStorage(`${STORAGE_PREFIX}unsplash-access-key`, '')
+const activeTab = ref<'design' | 'code' | 'ai'>('design')
 
 const providerDef = computed(
   () => AI_PROVIDERS.find((p) => p.id === providerID.value) ?? AI_PROVIDERS[0]
@@ -436,6 +437,7 @@ export function useAIChat() {
     maxOutputTokens,
     pexelsApiKey,
     unsplashAccessKey,
+    activeTab,
     isConfigured,
     ensureChat,
     resetChat
