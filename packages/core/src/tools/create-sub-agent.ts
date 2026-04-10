@@ -1,4 +1,7 @@
+import { INTERNAL_GRAPH } from '../figma-api/proxy'
 import { defineTool } from './schema'
+
+import type { SceneNode } from '../scene-graph'
 
 export interface SubAgentConfig {
   key: string
@@ -290,10 +293,26 @@ export const getCurrentPageChildren = defineTool({
   params: {},
   execute: async (figma) => {
     const currentPage = figma.currentPage
+    const nodesById = new Map<string, SceneNode>()
 
-    return {
-      success: true,
-      children: currentPage.children
+    for (const child of currentPage.children) {
+      const graph = child[INTERNAL_GRAPH]
+      for (const [nodeId, node] of graph.nodes) {
+        if (nodesById.has(nodeId)) continue
+        nodesById.set(nodeId, structuredClone(node))
+      }
     }
+
+    if (nodesById.size === 0) {
+      const graph = currentPage[INTERNAL_GRAPH]
+      for (const [nodeId, node] of graph.nodes) {
+        if (nodesById.has(nodeId)) continue
+        nodesById.set(nodeId, structuredClone(node))
+      }
+    }
+
+    const nodes = [...nodesById.values()]
+
+    return { nodes }
   }
 })
