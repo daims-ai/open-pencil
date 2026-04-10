@@ -278,7 +278,7 @@ function createTransport(
   const systemPrompt =
     key === 'ai'
       ? SYSTEM_PROMPT
-      : key.includes('design')
+      : key.includes('designer')
         ? `${SYSTEM_PROMPT}\n\n${instructions}`
         : instructions
 
@@ -342,11 +342,11 @@ async function ensureChat(key: string, instructions?: string): Promise<Chat<UIMe
   return chat
 }
 
-async function createOneOffChat(instructions?: string): Promise<OneOffChat | null> {
+async function createOneOffChat(agentKey: string, instructions?: string): Promise<OneOffChat | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()
-  const transport = createTransport(store, `oneoff:${Date.now()}`, instructions)
+  const transport = createTransport(store, `${agentKey}`, instructions)
   const oneOffChat = new Chat<UIMessage>({ transport, messages: [] })
 
   const subscribers = new Set<

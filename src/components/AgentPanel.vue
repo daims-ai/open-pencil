@@ -172,7 +172,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
       }
 
       const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount)
-      const subChat = await createOneOffChat(systemPrompt)
+      const subChat = await createOneOffChat(agentKey,systemPrompt)
       if (!subChat) {
         throw new Error('Failed to create sub-agent chat')
       }
