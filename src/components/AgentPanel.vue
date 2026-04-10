@@ -104,7 +104,8 @@ watch(
 function buildSubAgentSystemPrompt(
   agentConfig: SubAgentConfig,
   common: Record<string, unknown>,
-  retryCount: number
+  retryCount: number,
+  currentPageId: string
 ): string {
   const parts: string[] = []
 
@@ -114,19 +115,16 @@ function buildSubAgentSystemPrompt(
     )
   }
 
-  if (agentConfig.role) {
-    parts.push(`# Role\n${agentConfig.role}`)
-  }
-
-  // if (agentConfig.workflow) {
-  //   const workflowStr = Array.isArray(agentConfig.workflow)
-  //     ? agentConfig.workflow.join('\n')
-  //     : JSON.stringify(agentConfig.workflow, null, 2)
-  //   parts.push(`# Workflow\n${workflowStr}`)
-  // }
-
   if (Object.keys(common).length > 0) {
     parts.push(`# Common rules\n${JSON.stringify(common, null, 2)}`)
+  }
+
+  if (currentPageId) {
+    parts.push(`# Current page ID: ${currentPageId}`)
+  }
+
+  if (agentConfig.role) {
+    parts.push(`# Role\n${agentConfig.role}`)
   }
 
   return parts.join('\n\n')
@@ -171,7 +169,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
         throw new Error(`Agent "${agentKey}" not found in workflow`)
       }
 
-      const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount)
+      const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount, currentPageId)
       const subChat = await createOneOffChat(agentKey,systemPrompt)
       if (!subChat) {
         throw new Error('Failed to create sub-agent chat')
@@ -207,8 +205,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
 
         const mappedMessage = JSON.stringify({
           ...copiedAgent,
-          currentPageId,
-          ...(message ? { receivedMessage: message } : {})
+          ...(message ? { receivedMessage: message } : {}),
         })
         subChat.sendMessage({ text: mappedMessage }).catch((e: unknown) => {
           unsubscribe()
