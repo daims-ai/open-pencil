@@ -13,6 +13,7 @@ import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat, resetKeyChat, createOneOffChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
 import { parseDaimsWorkflow, setWorkflowContext, setSubAgentExecutor } from '@open-pencil/core'
+import testWorkflow from '../../test.json'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -81,6 +82,7 @@ const showContinue = computed(() => {
   const last = messages.value[messages.value.length - 1]
   return last.role === 'assistant' && didHitStepLimit()
 })
+const testWorkflowPayload = JSON.stringify(testWorkflow, null, 2)
 
 function scrollToBottom() {
   nextTick(() => {
@@ -263,6 +265,10 @@ async function handleSubmit(text: string) {
   })
 }
 
+function handleSubmitTestWorkflow() {
+  void handleSubmit(testWorkflowPayload)
+}
+
 function handleStop() {
   if (workflowActive.value && activeWorkflowChat.value) {
     activeWorkflowChat.value.stop()
@@ -435,6 +441,17 @@ function handleClearChat() {
         <span class="min-w-0 flex-1">{{ initError }}</span>
         <button class="shrink-0 text-red-300 hover:text-red-200" @click="initError = null">
           <icon-lucide-x class="size-3" />
+        </button>
+      </div>
+
+      <div class="flex shrink-0 justify-end px-3 py-1">
+        <button
+          class="flex items-center gap-1 rounded bg-accent/10 px-2 py-1 text-[11px] text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="status === 'streaming' || status === 'submitted'"
+          @click="handleSubmitTestWorkflow"
+        >
+          <icon-lucide-flask-conical class="size-3" />
+          Run test.json
         </button>
       </div>
 
