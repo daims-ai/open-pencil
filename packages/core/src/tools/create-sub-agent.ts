@@ -257,22 +257,37 @@ After this tool returns, you should restart the workflow from the beginning.`,
 
 export const deleteWorkflowNodes = defineTool({
   name: 'delete_workflow_nodes',
-  description: `Delete all nodes on the current page that were created during this workflow session.
-Use this when you need to clear all created content before retrying or when the workflow fails.
-This will remove all top-level children from the current page.`,
+  description: `Delete nodes on the current page created during this workflow session.
+Use this when you need to clear created content before retrying or when the workflow fails.
+Only top-level children with the exact provided name are removed.`,
   params: {
     reason: {
       type: 'string',
       description: 'The reason for deleting nodes (e.g., "Failed validation", "Starting over")',
       required: true
+    },
+    name: {
+      type: 'string',
+      description: 'Exact node name to delete from top-level children on the current page.',
+      required: true
     }
   },
   mutates: true,
-  execute: async (figma, { reason }) => {
+  execute: async (figma, { reason, name }) => {
     const currentPage = figma.currentPage
     const nodesToDelete: string[] = []
+    const targetName = name.trim()
+
+    if (!targetName) {
+      return {
+        success: false,
+        reason,
+        error: 'name is required and cannot be empty.'
+      }
+    }
 
     for (const child of currentPage.children) {
+      if (child.name !== targetName) continue
       nodesToDelete.push(child.id)
     }
 
@@ -283,11 +298,14 @@ This will remove all top-level children from the current page.`,
       }
     }
 
+    const scope = `nodes named "${targetName}" from the current page`
+
     return {
       success: true,
       reason,
+      name: targetName,
       deletedNodes: nodesToDelete.length,
-      message: `Deleted ${nodesToDelete.length} nodes from the current page.`
+      message: `Deleted ${nodesToDelete.length} ${scope}.`
     }
   }
 })
