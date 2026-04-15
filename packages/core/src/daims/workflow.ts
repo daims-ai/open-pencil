@@ -18,24 +18,31 @@ async function getPrompt(skey: string, link?: string) {
   return JSON.parse(result.prompt)
 }
 
-export async function parseDaimsWorkflow(text: string): Promise<DaimsWorkflow | null> {
+export async function checkIsDaimsWorkflow(text: string): Promise<boolean> {
   try {
     const workflow = JSON.parse(text)
-    if (typeof workflow !== 'object' || !workflow.isWorkflowCard) {
-      return null
-    }
+    return typeof workflow === 'object' && workflow.isWorkflowCard
+  } catch (e) {
+    console.error('Failed to check if text is a Daims workflow:', e)
+    return false
+  }
+}
 
-    const common = await getPrompt(workflow.common)
-    workflow.common = common
-
-    for await (const agentId of workflow.order) {
-      const key = workflow.agent[agentId]
-      const prompt = await getPrompt(key)
-      workflow.agent[agentId] = prompt
-    }
-
-    return workflow
-  } catch {
+export async function parseDaimsWorkflow(text: string): Promise<DaimsWorkflow | null> {
+  if (!checkIsDaimsWorkflow(text)) {
     return null
   }
+
+  const workflow = JSON.parse(text)
+
+  const common = await getPrompt(workflow.common)
+  workflow.common = common
+
+  for await (const agentId of workflow.order) {
+    const key = workflow.agent[agentId]
+    const prompt = await getPrompt(key)
+    workflow.agent[agentId] = prompt
+  }
+
+  return workflow
 }

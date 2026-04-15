@@ -8,6 +8,7 @@ import AgentPanel from './AgentPanel.vue'
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
+import OldAgentPanel from './OldAgentPanel.vue'
 import ZoomDropdown from './ZoomDropdown.vue'
 
 const store = useEditorStore()
@@ -74,6 +75,19 @@ const { panels } = useI18n()
           <icon-lucide-bot class="size-3" />
           Agent
         </TabsTrigger>
+        <TabsTrigger
+          value="agent-old"
+          data-test-id="properties-tab-agent-old"
+          class="flex items-center gap-1 rounded px-2.5 py-1 text-xs text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
+          @click="
+            () => {
+              store.state.activeRibbonTab = 'agent-old'
+            }
+          "
+        >
+          <icon-lucide-bot class="size-3" />
+          Old Agent
+        </TabsTrigger>
         <ZoomDropdown
           v-if="store.state.activeRibbonTab === 'panels' && store.state.panelMode === 'design'"
         />
@@ -113,6 +127,15 @@ const { panels } = useI18n()
         :hidden="store.state.activeRibbonTab !== 'agent'"
       >
         <AgentPanel />
+      </TabsContent>
+
+      <TabsContent
+        value="agent-old"
+        class="flex min-h-0 flex-1 flex-col"
+        :force-mount="true"
+        :hidden="store.state.activeRibbonTab !== 'agent-old'"
+      >
+        <OldAgentPanel />
       </TabsContent>
     </TabsRoot>
   </aside>

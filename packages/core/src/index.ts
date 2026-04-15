@@ -448,5 +448,5 @@ export {
 } from './tools/create-sub-agent'
 export type { SubAgentConfig, WorkflowContext, WorkflowStepResult } from './tools/create-sub-agent'
 
-export { parseDaimsWorkflow } from './daims'
+export { parseDaimsWorkflow, checkIsDaimsWorkflow } from './daims'
 export type { DaimsWorkflow } from './daims'

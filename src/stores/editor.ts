@@ -67,7 +67,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
       showUI: boolean
       showRulers: boolean
       showRemoteCursors: boolean
-      activeRibbonTab: 'panels' | 'code' | 'ai' | 'agent'
+      activeRibbonTab: 'panels' | 'code' | 'ai' | 'agent' | 'agent-old'
       panelMode: 'layers' | 'design'
       actionToast: string | null
       mobileDrawerSnap: 'closed' | 'half' | 'full'
