@@ -342,7 +342,10 @@ async function ensureChat(key: string, instructions?: string): Promise<Chat<UIMe
   return chat
 }
 
-async function createOneOffChat(agentKey: string, instructions?: string): Promise<OneOffChat | null> {
+async function createOneOffChat(
+  agentKey: string,
+  instructions?: string
+): Promise<OneOffChat | null> {
   if (!isConfigured.value) return null
 
   const store = getActiveEditorStore()

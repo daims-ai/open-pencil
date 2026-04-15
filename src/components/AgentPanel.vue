@@ -13,7 +13,6 @@ import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat, resetKeyChat, createOneOffChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
 import { parseDaimsWorkflow, setWorkflowContext, setSubAgentExecutor } from '@open-pencil/core'
-import testWorkflow from '../../test.json'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -82,7 +81,6 @@ const showContinue = computed(() => {
   const last = messages.value[messages.value.length - 1]
   return last.role === 'assistant' && didHitStepLimit()
 })
-const testWorkflowPayload = JSON.stringify(testWorkflow, null, 2)
 
 function scrollToBottom() {
   nextTick(() => {
@@ -165,14 +163,24 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
   const commonConfig = workflow.common ?? {}
 
   setSubAgentExecutor(
-    async (agentKey: string, message: string, retryCount: number, currentPageId: string): Promise<string> => {
+    async (
+      agentKey: string,
+      message: string,
+      retryCount: number,
+      currentPageId: string
+    ): Promise<string> => {
       const agentConfig = agentsMap[agentKey]
       if (!agentConfig) {
         throw new Error(`Agent "${agentKey}" not found in workflow`)
       }
 
-      const systemPrompt = buildSubAgentSystemPrompt(agentConfig, commonConfig, retryCount, currentPageId)
-      const subChat = await createOneOffChat(agentKey,systemPrompt)
+      const systemPrompt = buildSubAgentSystemPrompt(
+        agentConfig,
+        commonConfig,
+        retryCount,
+        currentPageId
+      )
+      const subChat = await createOneOffChat(agentKey, systemPrompt)
       if (!subChat) {
         throw new Error('Failed to create sub-agent chat')
       }
@@ -207,7 +215,7 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
 
         const mappedMessage = JSON.stringify({
           ...copiedAgent,
-          ...(message ? { receivedMessage: message } : {}),
+          ...(message ? { receivedMessage: message } : {})
         })
         subChat.sendMessage({ text: mappedMessage }).catch((e: unknown) => {
           unsubscribe()
@@ -254,7 +262,7 @@ async function handleSubmit(text: string) {
     return
   }
 
-  const workflow = parseDaimsWorkflow(text)
+  const workflow = await parseDaimsWorkflow(text)
   if (workflow) {
     await initializeWorkflow(workflow, text)
     return
@@ -263,10 +271,6 @@ async function handleSubmit(text: string) {
   chat.value?.sendMessage({ text }).catch((e: unknown) => {
     console.error('Chat error:', e)
   })
-}
-
-function handleSubmitTestWorkflow() {
-  void handleSubmit(testWorkflowPayload)
 }
 
 function handleStop() {
@@ -441,17 +445,6 @@ function handleClearChat() {
         <span class="min-w-0 flex-1">{{ initError }}</span>
         <button class="shrink-0 text-red-300 hover:text-red-200" @click="initError = null">
           <icon-lucide-x class="size-3" />
-        </button>
-      </div>
-
-      <div class="flex shrink-0 justify-end px-3 py-1">
-        <button
-          class="flex items-center gap-1 rounded bg-accent/10 px-2 py-1 text-[11px] text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
-          :disabled="status === 'streaming' || status === 'submitted'"
-          @click="handleSubmitTestWorkflow"
-        >
-          <icon-lucide-flask-conical class="size-3" />
-          Run test.json
         </button>
       </div>
 

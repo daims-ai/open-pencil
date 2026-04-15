@@ -24,7 +24,12 @@ export interface WorkflowStepResult {
 
 let currentWorkflowContext: WorkflowContext | null = null
 let subAgentExecutor:
-  | ((agentKey: string, message: string, retryCount: number, currentPageId: string) => Promise<string>)
+  | ((
+      agentKey: string,
+      message: string,
+      retryCount: number,
+      currentPageId: string
+    ) => Promise<string>)
   | null = null
 let workflowHistory: WorkflowStepResult[] = []
 let workflowResetHandler: (() => Promise<void>) | null = null
