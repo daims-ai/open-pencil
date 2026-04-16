@@ -96,6 +96,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
           tangentField: 'tangentStart' | 'tangentEnd'
         } | null
       } | null
+      scrubInputFocused: boolean
     }
   >({
     ...createDefaultEditorState(graph.getPages()[0].id),
@@ -111,7 +112,8 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     cursorCanvasX: null,
     cursorCanvasY: null,
     nodeEditState: null,
-    leftPanelTab: 'layers'
+    leftPanelTab: 'layers',
+    scrubInputFocused: false
   })
 
   const editor = createEditor({ graph, state, loadFont, skipInitialGraphSetup: !!initialGraph })

@@ -128,7 +128,7 @@ export type {
   StepBudget
 } from './tools'
 export { executeRpcCommand, ALL_RPC_COMMANDS } from './rpc'
-export { queryByXPath, matchByXPath } from './xpath'
+export { queryByXPath, matchByXPath, nodeToXPath } from './xpath'
 export type { XPathQueryOptions } from './xpath'
 export {
   okhclToRGBA,
@@ -450,3 +450,5 @@ export type { SubAgentConfig, WorkflowContext, WorkflowStepResult } from './tool
 
 export { parseDaimsWorkflow, checkIsDaimsWorkflow } from './daims'
 export type { DaimsWorkflow } from './daims'
+
+export { getAbsoluteRotation, getWorldHandles, getAbsolutePosition } from './canvas/coordinate'

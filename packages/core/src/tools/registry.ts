@@ -68,6 +68,7 @@ import {
   pageBounds,
   selectNodes,
   listFonts,
+  listAvailableFonts,
   getJsx,
   diffJsx
 } from './read'
@@ -187,6 +188,7 @@ export const EXTENDED_TOOLS: ToolDef[] = [
   switchPage,
   pageBounds,
   listFonts,
+  listAvailableFonts,
   diffJsx,
   // Create (advanced)
   createShape,

@@ -13,6 +13,7 @@ import {
   computeAllLayouts,
   selectionToJSX,
   sceneNodeToJSX,
+  nodeToXPath,
   randomHex
 } from '@open-pencil/core'
 
@@ -125,6 +126,22 @@ export function connectAutomation(getStore: () => EditorStore, authToken: string
     return { ok: true }
   }
 
+  async function handleSelection(store: EditorStore): Promise<unknown> {
+    const ids = [...store.state.selectedIds]
+    const nodes = ids
+      .map((id) => store.graph.getNode(id))
+      .filter((n): n is NonNullable<typeof n> => n !== undefined)
+      .map((n) => ({
+        id: n.id,
+        name: n.name,
+        type: n.type,
+        width: Math.round(n.width),
+        height: Math.round(n.height),
+        xpath: nodeToXPath(store.graph, n.id)
+      }))
+    return { ok: true, result: nodes }
+  }
+
   const commandHandlers: Partial<
     Record<string, (store: EditorStore, args: unknown) => Promise<unknown>>
   > = {
@@ -132,6 +149,7 @@ export function connectAutomation(getStore: () => EditorStore, authToken: string
     tool: handleTool,
     export: handleExport,
     export_jsx: handleExportJsx,
+    selection: handleSelection,
 
     save_file: handleSaveFile
   }
@@ -147,12 +165,17 @@ export function connectAutomation(getStore: () => EditorStore, authToken: string
   function connect() {
     try {
       ws = new WebSocket(`ws://127.0.0.1:${AUTOMATION_WS_PORT}`)
-    } catch {
+    } catch (e) {
+      console.error(
+        '[Automation] WebSocket constructor failed:',
+        e instanceof Error ? e.message : e
+      )
       scheduleReconnect()
       return
     }
 
     ws.onopen = () => {
+      console.log('[Automation] WebSocket connected to MCP server')
       ws?.send(JSON.stringify({ type: 'register', token }))
     }
 
@@ -183,12 +206,14 @@ export function connectAutomation(getStore: () => EditorStore, authToken: string
       }
     }
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
+      console.error('[Automation] WebSocket closed:', `code=${event.code} reason=${event.reason}`)
       ws = null
       scheduleReconnect()
     }
 
-    ws.onerror = () => {
+    ws.onerror = (event) => {
+      console.error('[Automation] WebSocket error:', event)
       ws?.close()
     }
   }

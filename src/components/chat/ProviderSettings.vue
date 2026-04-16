@@ -16,8 +16,10 @@ import ProviderSelectField from '@/components/chat/ProviderSelectField.vue'
 import { useInputUI } from '@/components/ui/input'
 import { usePopoverUI } from '@/components/ui/popover'
 import { useAIChat } from '@/composables/use-chat'
+import { openExternalLink } from '@/utils/external-link'
 
 const cls = usePopoverUI({ content: 'isolate z-[51] w-64 p-3' })
+const popoverOpen = ref(false)
 
 const {
   providerID,
@@ -94,8 +96,8 @@ function clearUnsplashKey() {
 </script>
 
 <template>
-  <PopoverRoot>
-    <Tip label="Provider settings">
+  <PopoverRoot @update:open="popoverOpen = $event">
+    <Tip label="Provider settings" :disabled="popoverOpen">
       <PopoverTrigger
         data-test-id="provider-settings-trigger"
         class="rounded p-0.5 text-muted hover:bg-hover hover:text-surface"
@@ -167,13 +169,13 @@ function clearUnsplashKey() {
               :class="useInputUI({ size: 'sm' }).base"
               @change="save"
             />
-            <a
-              href="https://www.pexels.com/api/"
-              target="_blank"
-              class="text-[9px] text-muted underline hover:text-surface"
+            <button
+              type="button"
+              class="cursor-pointer text-[9px] text-muted underline hover:text-surface"
+              @click="openExternalLink('https://www.pexels.com/api/')"
             >
               Get free Pexels API key →
-            </a>
+            </button>
           </div>
 
           <!-- Unsplash stock photos -->
@@ -201,13 +203,13 @@ function clearUnsplashKey() {
               :class="useInputUI({ size: 'sm' }).base"
               @change="save"
             />
-            <a
-              href="https://unsplash.com/oauth/applications"
-              target="_blank"
-              class="text-[9px] text-muted underline hover:text-surface"
+            <button
+              type="button"
+              class="cursor-pointer text-[9px] text-muted underline hover:text-surface"
+              @click="openExternalLink('https://unsplash.com/oauth/applications')"
             >
               Get free Unsplash access key →
-            </a>
+            </button>
           </div>
 
           <template v-if="!isACP">
@@ -293,14 +295,14 @@ function clearUnsplashKey() {
                 :class="useInputUI({ size: 'sm' }).base"
                 @change="save"
               />
-              <a
+              <button
                 v-if="providerDef.keyURL"
-                :href="providerDef.keyURL"
-                target="_blank"
-                class="text-[9px] text-muted underline hover:text-surface"
+                type="button"
+                class="cursor-pointer text-[9px] text-muted underline hover:text-surface"
+                @click="openExternalLink(providerDef.keyURL as string)"
               >
                 Get API key →
-              </a>
+              </button>
             </div>
           </template>
 
