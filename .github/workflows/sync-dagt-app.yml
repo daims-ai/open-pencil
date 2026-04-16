@@ -1,0 +1,90 @@
+name: Sync dist to dagt-app
+
+on:
+  push:
+    branches:
+      - rev/master
+    paths-ignore:
+      - 'packages/docs/**'
+      - 'openspec/**'
+      - '*.md'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run sync without creating or updating PR"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-dagt-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-dagt-app:
+    if: github.repository == 'daims-ai/open-pencil'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout open-pencil
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build dist with Vite
+        run: PATH="./node_modules/.bin:$PATH" vite build
+
+      - name: Validate dagt-app sync token
+        env:
+          DAGT_APP_SYNC_TOKEN: ${{ secrets.DAGT_APP_SYNC_TOKEN }}
+        run: |
+          if [ -z "$DAGT_APP_SYNC_TOKEN" ]; then
+            echo "DAGT_APP_SYNC_TOKEN is required."
+            echo "Grant contents:write and pull_requests:write on daims-ai/dagt-app."
+            exit 1
+          fi
+
+      - name: Checkout dagt-app dev
+        uses: actions/checkout@v4
+        with:
+          repository: daims-ai/dagt-app
+          ref: dev
+          token: ${{ secrets.DAGT_APP_SYNC_TOKEN }}
+          path: dagt-app
+
+      - name: Sync dist to vendor/open-pencil
+        run: |
+          mkdir -p dagt-app/vendor/open-pencil
+          rsync -a --delete dist/ dagt-app/vendor/open-pencil/
+
+      - name: Show synced changes (dry run)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+        working-directory: dagt-app
+        run: |
+          git status --short
+          git diff --stat -- vendor/open-pencil
+
+      - name: Create or update pull request
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.DAGT_APP_SYNC_TOKEN }}
+          path: dagt-app
+          add-paths: |
+            vendor/open-pencil
+          commit-message: "chore: sync open-pencil dist from ${{ github.sha }}"
+          branch: chore/open-pencil-dist-sync
+          delete-branch: false
+          base: dev
+          title: "chore: sync open-pencil dist"
+          body: |
+            This PR syncs build artifacts from `daims-ai/open-pencil`.
+
+            - source branch: `${{ github.ref_name }}`
+            - source commit: `${{ github.sha }}`
+            - source workflow: `${{ github.workflow }}`
