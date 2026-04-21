@@ -151,61 +151,44 @@ Use this to delegate specific tasks to specialized agents defined in the workflo
 
 export const checkWorkflowStatus = defineTool({
   name: 'check_workflow_status',
-  description: `Check the success/failure status of a workflow step based on the response.
-Use this after receiving a response from a sub-agent to determine if the step was successful.
-Returns success status and allows PM to decide next action.`,
+  description: `Record the success/failure status of a workflow step.
+Use this after evaluating a sub-agent's response to explicitly log whether the step succeeded.
+The caller (PM) decides success/failure and provides the reason; this tool stores it in the workflow history and returns the current history so PM can decide the next action.`,
   params: {
     step_name: {
       type: 'string',
       description: 'Name of the workflow step being checked (e.g., "designer_task", "validation")',
       required: true
     },
-    response: {
-      type: 'string',
-      description: 'The response text from the sub-agent to evaluate',
+    success: {
+      type: 'boolean',
+      description: 'Whether the step succeeded. true for success, false for failure.',
       required: true
     },
-    success_keywords: {
+    reason: {
       type: 'string',
-      description: 'Comma-separated keywords that indicate success (e.g., "DONE,SUCCESS,PASS")',
-      required: true
-    },
-    failure_keywords: {
-      type: 'string',
-      description: 'Comma-separated keywords that indicate failure (e.g., "ERROR,FAIL,REJECTED")',
+      description:
+        'Human-readable reason summarizing why the step is considered success or failure.',
       required: true
     }
   },
-  execute: async (_figma, { step_name, response, success_keywords, failure_keywords }) => {
-    const successList = success_keywords.split(',').map((k) => k.trim().toUpperCase())
-    const failureList = failure_keywords.split(',').map((k) => k.trim().toUpperCase())
-    const upperResponse = response.toUpperCase()
-
-    const hasSuccess = successList.some((keyword) => upperResponse.includes(keyword))
-    const hasFailure = failureList.some((keyword) => upperResponse.includes(keyword))
-
-    let status: 'success' | 'failure' | 'unknown'
-    if (hasSuccess && !hasFailure) {
-      status = 'success'
-    } else if (hasFailure) {
-      status = 'failure'
-    } else {
-      status = 'unknown'
-    }
+  execute: async (_figma, { step_name, success, reason }) => {
+    const status: 'success' | 'failure' = success ? 'success' : 'failure'
 
     const result: WorkflowStepResult = {
       step: step_name,
       agentKey: 'check',
-      success: status === 'success',
-      response
+      success,
+      response: reason,
+      ...(success ? {} : { error: reason })
     }
     addWorkflowStepResult(result)
 
     return {
       step: step_name,
       status,
-      matchedSuccessKeywords: successList.filter((k) => upperResponse.includes(k)),
-      matchedFailureKeywords: failureList.filter((k) => upperResponse.includes(k)),
+      success,
+      reason,
       history: getWorkflowHistory()
     }
   }
