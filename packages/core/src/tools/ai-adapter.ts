@@ -164,7 +164,9 @@ export function toolsToAI(
         const nodeBefore =
           def.mutates && options.onToolLog ? captureNodeSnapshot(figma, args) : undefined
 
+        console.log('[tool]', def.name, args)
         options.onBeforeExecute?.(def)
+
         try {
           let execResult = await def.execute(options.getFigma(), args)
           if (def.mutates && options.onFlashNodes) {
