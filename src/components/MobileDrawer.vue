@@ -10,7 +10,6 @@ import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
 import LayerTree from './LayerTree.vue'
-import OldAgentPanel from './OldAgentPanel.vue'
 import PagesPanel from './PagesPanel.vue'
 import {
   DRAWER_SPRING_DAMPING,
@@ -23,7 +22,7 @@ import {
 import { useEditorStore } from '@/stores/editor'
 
 type Snap = 'closed' | 'half' | 'full'
-type DrawerTab = 'layers' | 'design' | 'code' | 'ai' | 'agent' | 'agent-old'
+type DrawerTab = 'layers' | 'design' | 'code' | 'ai' | 'agent'
 
 const store = useEditorStore()
 
@@ -41,13 +40,12 @@ const snap = computed({
 
 function getDrawerTab(): DrawerTab {
   if (store.state.activeRibbonTab === 'code') return 'code'
-  if (store.state.activeRibbonTab === 'agent-old') return 'agent-old'
   if (store.state.activeRibbonTab === 'agent') return 'agent'
   return store.state.panelMode === 'design' ? 'design' : 'layers'
 }
 
 function setDrawerTab(tab: DrawerTab) {
-  if (tab === 'code' || tab === 'ai' || tab === 'agent' || tab === 'agent-old') {
+  if (tab === 'code' || tab === 'ai' || tab === 'agent') {
     store.state.activeRibbonTab = tab
     return
   }
@@ -173,15 +171,6 @@ const drawerTransition = {
           >
             <icon-lucide-bot class="size-4" />
           </TabsTrigger>
-
-          <TabsTrigger
-            data-test-id="mobile-ribbon-agent-old"
-            value="agent-old"
-            class="flex h-full cursor-pointer items-center justify-center px-3 transition-colors outline-none select-none data-[state=active]:text-accent"
-            @click="toggleTab('agent-old')"
-          >
-            <icon-lucide-bot class="size-4" />
-          </TabsTrigger>
         </TabsList>
       </nav>
 
@@ -218,12 +207,6 @@ const drawerTransition = {
         <TabsContent value="agent" class="mt-0 h-full data-[state=inactive]:hidden">
           <div data-test-id="mobile-drawer-agent" class="flex h-full flex-col">
             <AgentPanel />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="agent-old" class="mt-0 h-full data-[state=inactive]:hidden">
-          <div data-test-id="mobile-drawer-agent-old" class="flex h-full flex-col">
-            <OldAgentPanel />
           </div>
         </TabsContent>
       </div>
