@@ -240,9 +240,14 @@ After this tool returns, you should restart the workflow from the beginning.`,
 
 export const deleteWorkflowNodes = defineTool({
   name: 'delete_workflow_nodes',
-  description: `Delete nodes on the current page created during this workflow session.
+  description: `Delete nodes on the current page (at any depth) whose name EXACTLY matches the given name.
 Use this when you need to clear created content before retrying or when the workflow fails.
-Only top-level children with the exact provided name are removed.`,
+
+STRICT NAME MATCHING RULES:
+- The 'name' argument MUST be copied verbatim from the workflow step / instruction that told you which node to delete. Do NOT paraphrase, translate, pluralize, append "-frame", strip suffixes, or otherwise transform the name.
+- Example: if the workflow says "delete 'kakao-banner-badge' frame", the correct call is name="kakao-banner-badge" (NOT "kakao-banner-frame", NOT "kakao-banner-badge-frame", NOT "kakao-banner").
+- Matching is exact and case-sensitive; any descendant of the current page (top-level or nested inside another frame/group) whose 'name' equals the provided string is removed.
+- If no node matches the provided name, NOTHING is deleted and the tool reports deletedNodes: 0. In that case, do not retry with a guessed/modified name — stop and surface the mismatch.`,
   params: {
     reason: {
       type: 'string',
@@ -251,14 +256,14 @@ Only top-level children with the exact provided name are removed.`,
     },
     name: {
       type: 'string',
-      description: 'Exact node name to delete from top-level children on the current page.',
+      description:
+        'Exact, verbatim node name to delete. Must be copied character-for-character from the workflow instruction / designer output (no added or removed suffixes such as "-frame"). Every descendant of the current page (at any depth) whose name equals this string will be removed.',
       required: true
     }
   },
   mutates: true,
   execute: async (figma, { reason, name }) => {
     const currentPage = figma.currentPage
-    const nodesToDelete: string[] = []
     const targetName = name.trim()
 
     if (!targetName) {
@@ -269,15 +274,28 @@ Only top-level children with the exact provided name are removed.`,
       }
     }
 
-    for (const child of currentPage.children) {
-      if (child.name !== targetName) continue
-      nodesToDelete.push(child.id)
+    const matches = currentPage.findAll((node) => node.name === targetName)
+    const nodesToDelete = matches.map((node) => node.id)
+
+    if (nodesToDelete.length === 0) {
+      return {
+        success: false,
+        reason,
+        name: targetName,
+        deletedNodes: 0,
+        error: `No descendant of the current page matches name="${targetName}" exactly. Nothing was deleted. Do not retry with a modified name; verify the node name and try again only if you can copy it verbatim from the workflow instruction or designer output.`
+      }
     }
 
+    let deletedCount = 0
     for (const nodeId of nodesToDelete) {
       const node = figma.getNodeById(nodeId)
-      if (node && 'remove' in node) {
+      if (!node || !('remove' in node)) continue
+      try {
         node.remove()
+        deletedCount++
+      } catch {
+        // A parent match may have already removed this descendant; skip silently.
       }
     }
 
@@ -287,8 +305,8 @@ Only top-level children with the exact provided name are removed.`,
       success: true,
       reason,
       name: targetName,
-      deletedNodes: nodesToDelete.length,
-      message: `Deleted ${nodesToDelete.length} ${scope}.`
+      deletedNodes: deletedCount,
+      message: `Deleted ${deletedCount} ${scope}.`
     }
   }
 })

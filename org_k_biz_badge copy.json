@@ -25,16 +25,19 @@
           "STEP4: If STEP3 success is false, report failure to the user and call reset_context_and_retry and go back to STEP2.",
           "STEP5: If STEP3 success is true, use create_sub_agent with agent_key='validator' and send validation request.",
           "STEP6: Read the validator response and decide success/failure before proceeding to next step. Call 'check_workflow_status' with step_name='validation' and decide success=true only if validation clearly passes (e.g. PASS) and success=false otherwise (FAIL or ambiguous), and reason=<short summary of why>.",
-          "STEP7: If STEP6 success is false and retryCount < 3, call delete_workflow_nodes to delete 'kakao-banner-badge' frame and reset_context_and_retry with reason='Validation failed' and go back to STEP3.",
+          "STEP7: If STEP6 success is false and retryCount < 3, call delete_workflow_nodes with name='kakao-banner-badge' and reset_context_and_retry with reason='Validation failed' and go back to STEP3.",
           "STEP8: If STEP6 success is true, finish workflow by returning DONE and do not provide summary. If retryCount > 3, finish workflow by returning FAIL."
         ]
       }
     },
     "designer": {
-      "role": "Create requested visual layout on the given currentPageId. Follow strictly with common rule guides. If shape is badge, update badge-icon shape using 'apply_photo_from_url' of the color. If shape is line, update fill color with the use input color. Do not omit text layers when non-empty input is present.",
+      "role": "Create requested visual layout on the given currentPageId. Follow strictly with common rule guides. If shape is badge, update badge-icon shape using 'apply_photo_from_url' of the color. If shape is line, update fill color with the use input color. Do not omit text layers when non-empty input is present. Use fontFamily values verbatim from common rules (do NOT rename, normalize, or convert camelCase to spaced form — e.g., keep 'SpoqaHanSans' exactly as 'SpoqaHanSans', never 'Spoqa Han Sans').",
       "workflow": [
-        { "step": 1, "message": "Read user text input and identify the actual provided text values for text layers" },
-        { "step": 2, "tool": ["render", "apply_photo_from_url"], "message": "Render frame-line or frame-badge, badge icon and badge text depending on user input of badge type shape." }
+        {
+          "step": 1,
+          "tool": [{ "name": "render", "required": true }, { "name": "apply_photo_from_url", "required": false }],
+          "message": "Identify text values from user input, then immediately render frame-line or frame-badge, badge icon, and badge text according to the user's badge type shape. Do NOT return before calling the required tools."
+        }
       ],
       "output": [
         "return SUCCESS if creation is done with summary of creation",
@@ -117,8 +120,8 @@
         "opacity": 1,
         "color": "rgb(255,255,255)",
         "text_align": "center",
-        "fontWeight": "Bold",
-        "fontFamily": "Arial Rounded MT Bold",
+        "fontWeight": "bold",
+        "fontFamily": "SpoqaHanSans",
         "constraints": {
           "max_characters": 8,
           "must_not_overflow_or_clip": true
@@ -155,7 +158,7 @@
         "color": "rgb(255,255,255)",
         "text_align": "center",
         "fontWeight": "bold",
-        "fontFamily": "Arial Rounded MT Bold",
+        "fontFamily": "SpoqaHanSans",
         "constraints": {
           "max_characters_per_line": 3,
           "max_lines": 2,
