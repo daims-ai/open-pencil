@@ -12,7 +12,16 @@ import ChatMessage from '@/components/chat/ChatMessage.vue'
 import ProviderSetup from '@/components/chat/ProviderSetup.vue'
 import { useAIChat, resetKeyChat, createOneOffChat } from '@/composables/use-chat'
 import { useI18n } from '@open-pencil/vue'
-import { parseDaimsWorkflow, setWorkflowContext, setSubAgentExecutor } from '@open-pencil/core'
+import {
+  getRetryCount,
+  getWorkflowContext,
+  getWorkflowHistory,
+  parseDaimsWorkflow,
+  setRetryCount,
+  setSubAgentExecutor,
+  setWorkflowContext,
+  setWorkflowHistory
+} from '@open-pencil/core'
 
 import type { Chat } from '@ai-sdk/vue'
 import type { UIMessage } from 'ai'
@@ -130,101 +139,220 @@ function buildSubAgentSystemPrompt(
   return parts.join('\n\n')
 }
 
+function isNestedWorkflowAgent(config: SubAgentConfig): boolean {
+  return (
+    config.isWorkflowCard === true &&
+    Array.isArray(config.order) &&
+    !!config.agent &&
+    typeof config.agent === 'object'
+  )
+}
+
+function buildAgentsMap(source: {
+  order: string[]
+  agent: Record<string, unknown>
+}): Record<string, SubAgentConfig> {
+  const map: Record<string, SubAgentConfig> = {}
+  for (const key of source.order) {
+    const raw = source.agent[key] as Record<string, unknown> | undefined
+    if (
+      raw &&
+      typeof raw === 'object' &&
+      raw.isWorkflowCard === true &&
+      Array.isArray(raw.order) &&
+      raw.agent &&
+      typeof raw.agent === 'object'
+    ) {
+      map[key] = {
+        key,
+        role: typeof raw.role === 'string' ? raw.role : '',
+        isWorkflowCard: true,
+        order: raw.order as string[],
+        agent: raw.agent as Record<string, unknown>,
+        common: (raw.common as Record<string, unknown>) ?? {}
+      }
+    } else {
+      map[key] = {
+        key,
+        role: (raw?.role as string) ?? '',
+        workflow: raw?.workflow
+      }
+    }
+  }
+  return map
+}
+
+function buildLeafAgentMessage(agentConfig: SubAgentConfig, message: string): string {
+  const copied: Record<string, unknown> = { ...agentConfig }
+  delete copied.key
+  delete copied.role
+  delete copied.isWorkflowCard
+  delete copied.order
+  delete copied.agent
+  delete copied.common
+  return JSON.stringify({
+    ...copied,
+    ...(message ? { receivedMessage: message } : {})
+  })
+}
+
+async function runOneOffAgentChat(
+  agentKey: string,
+  systemPrompt: string,
+  initialText: string
+): Promise<string> {
+  const subChat = await createOneOffChat(agentKey, systemPrompt)
+  if (!subChat) {
+    throw new Error('Failed to create sub-agent chat')
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    let responseText = ''
+
+    const unsubscribe = subChat.subscribe((state) => {
+      const lastMessage = state.messages[state.messages.length - 1]
+      if (lastMessage?.role === 'assistant') {
+        for (const part of lastMessage.parts) {
+          if (part.type === 'text') {
+            responseText = part.text
+          }
+        }
+      }
+
+      if (state.status === 'ready' && state.messages.length > 1) {
+        unsubscribe()
+        subChat.destroy()
+        resolve(responseText)
+      } else if (state.status === 'error') {
+        unsubscribe()
+        subChat.destroy()
+        reject(new Error(state.error?.message ?? 'Sub-agent error'))
+      }
+    })
+
+    subChat.sendMessage({ text: initialText }).catch((e: unknown) => {
+      unsubscribe()
+      subChat.destroy()
+      reject(e)
+    })
+  })
+}
+
+async function runNestedWorkflowAsSubAgent(
+  parentAgentKey: string,
+  nestedConfig: SubAgentConfig,
+  message: string,
+  _parentRetryCount: number,
+  currentPageId: string
+): Promise<string> {
+  if (!nestedConfig.order || !nestedConfig.agent) {
+    throw new Error(`Nested workflow "${parentAgentKey}" is missing order/agent`)
+  }
+
+  const nestedAgentsMap = buildAgentsMap({
+    order: nestedConfig.order,
+    agent: nestedConfig.agent
+  })
+  const nestedCommon = nestedConfig.common ?? {}
+
+  // Snapshot the parent scope so the nested workflow gets a fresh, isolated
+  // context/history/retry counter. `create_sub_agent` tool calls made by the
+  // nested PM and its descendants will only see their own scope; they cannot
+  // read or mutate the parent's workflow history. On completion (success or
+  // failure) we restore the parent scope so the outer PM resumes unaffected.
+  const previousContext = getWorkflowContext()
+  const previousHistory = getWorkflowHistory()
+  const previousRetryCount = getRetryCount()
+
+  setWorkflowContext({
+    agents: nestedAgentsMap,
+    common: nestedCommon
+  })
+  setWorkflowHistory([])
+  setRetryCount(0)
+
+  try {
+    const firstKey = nestedConfig.order[0]
+    const firstAgentConfig = nestedAgentsMap[firstKey]
+    if (!firstAgentConfig) {
+      throw new Error(`Nested workflow "${parentAgentKey}" has no entry agent`)
+    }
+
+    const systemPrompt = buildSubAgentSystemPrompt(
+      firstAgentConfig,
+      nestedCommon,
+      // Nested scope starts with its own retry counter (0), independent of the
+      // parent's retry state.
+      0,
+      currentPageId
+    )
+
+    const initialText = buildLeafAgentMessage(firstAgentConfig, message)
+    return await runOneOffAgentChat(`${parentAgentKey}:${firstKey}`, systemPrompt, initialText)
+  } finally {
+    setWorkflowContext(previousContext)
+    setWorkflowHistory(previousHistory)
+    setRetryCount(previousRetryCount)
+  }
+}
+
+async function runSubAgentFromContext(
+  agentKey: string,
+  message: string,
+  retryCount: number,
+  currentPageId: string
+): Promise<string> {
+  const ctx = getWorkflowContext()
+  if (!ctx) {
+    throw new Error('No workflow context available')
+  }
+
+  const agentConfig = ctx.agents[agentKey] as SubAgentConfig | undefined
+  if (!agentConfig) {
+    throw new Error(`Agent "${agentKey}" not found in workflow`)
+  }
+
+  if (isNestedWorkflowAgent(agentConfig)) {
+    return runNestedWorkflowAsSubAgent(
+      agentKey,
+      agentConfig,
+      message,
+      retryCount,
+      currentPageId
+    )
+  }
+
+  const systemPrompt = buildSubAgentSystemPrompt(
+    agentConfig,
+    ctx.common,
+    retryCount,
+    currentPageId
+  )
+  const initialText = buildLeafAgentMessage(agentConfig, message)
+  return runOneOffAgentChat(agentKey, systemPrompt, initialText)
+}
+
 async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
   if (workflow.order.length === 0) return
 
   const firstKey = workflow.order[0]
-  const firstAgentConfig = workflow.agent[firstKey] as { role?: string; workflow?: unknown }
-  const systemPrompt = firstAgentConfig?.role ?? ''
+  const firstRaw = workflow.agent[firstKey] as Record<string, unknown> | undefined
+  const systemPrompt = (firstRaw?.role as string) ?? ''
 
   const chatInstance = await ensureChat(`workflow:${firstKey}`, systemPrompt)
   if (!chatInstance) return
 
-  const agents: SubAgentConfig[] = []
-  for (const key of workflow.order) {
-    const agentConfig = workflow.agent[key] as { role?: string; workflow?: unknown }
-    agents.push({
-      key,
-      role: agentConfig?.role ?? '',
-      workflow: agentConfig?.workflow
-    })
-  }
-
-  const agentsMap: Record<string, SubAgentConfig> = {}
-  for (const agent of agents) {
-    agentsMap[agent.key] = agent
-  }
+  const agentsMap = buildAgentsMap({
+    order: workflow.order,
+    agent: workflow.agent
+  })
 
   setWorkflowContext({
     agents: agentsMap,
     common: workflow.common ?? {}
   })
 
-  const commonConfig = workflow.common ?? {}
-
-  setSubAgentExecutor(
-    async (
-      agentKey: string,
-      message: string,
-      retryCount: number,
-      currentPageId: string
-    ): Promise<string> => {
-      const agentConfig = agentsMap[agentKey]
-      if (!agentConfig) {
-        throw new Error(`Agent "${agentKey}" not found in workflow`)
-      }
-
-      const systemPrompt = buildSubAgentSystemPrompt(
-        agentConfig,
-        commonConfig,
-        retryCount,
-        currentPageId
-      )
-      const subChat = await createOneOffChat(agentKey, systemPrompt)
-      if (!subChat) {
-        throw new Error('Failed to create sub-agent chat')
-      }
-
-      return new Promise((resolve, reject) => {
-        let responseText = ''
-
-        const unsubscribe = subChat.subscribe((state) => {
-          const lastMessage = state.messages[state.messages.length - 1]
-          if (lastMessage?.role === 'assistant') {
-            for (const part of lastMessage.parts) {
-              if (part.type === 'text') {
-                responseText = part.text
-              }
-            }
-          }
-
-          if (state.status === 'ready' && state.messages.length > 1) {
-            unsubscribe()
-            subChat.destroy()
-            resolve(responseText)
-          } else if (state.status === 'error') {
-            unsubscribe()
-            subChat.destroy()
-            reject(new Error(state.error?.message ?? 'Sub-agent error'))
-          }
-        })
-
-        const copiedAgent = { ...agentConfig }
-        delete copiedAgent.key
-        delete copiedAgent.role
-
-        const mappedMessage = JSON.stringify({
-          ...copiedAgent,
-          ...(message ? { receivedMessage: message } : {})
-        })
-        subChat.sendMessage({ text: mappedMessage }).catch((e: unknown) => {
-          unsubscribe()
-          subChat.destroy()
-          reject(e)
-        })
-      })
-    }
-  )
+  setSubAgentExecutor(runSubAgentFromContext)
 
   workflowAgents.value = [
     {
@@ -236,7 +364,13 @@ async function initializeWorkflow(workflow: DaimsWorkflow, _rawText: string) {
   workflowActive.value = true
   activeAgentIndex.value = 0
 
-  const firstText = JSON.stringify(firstAgentConfig?.workflow ?? {})
+  // The top-level entry agent (usually PM) kicks off the workflow with its
+  // own `workflow` field if present, otherwise it receives the same leaf-style
+  // payload used for sub-agents.
+  const firstAgentConfig = agentsMap[firstKey]
+  const firstText = isNestedWorkflowAgent(firstAgentConfig)
+    ? buildLeafAgentMessage(firstAgentConfig, '')
+    : JSON.stringify(firstAgentConfig.workflow ?? {})
   chatInstance.sendMessage({ text: firstText }).catch((e: unknown) => {
     console.error('Chat error:', e)
   })

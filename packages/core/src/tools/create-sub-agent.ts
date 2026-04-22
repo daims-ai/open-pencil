@@ -7,6 +7,14 @@ export interface SubAgentConfig {
   key: string
   role: string
   workflow?: unknown
+  // Nested workflow-card fields. Present when this sub-agent is itself a
+  // workflow card (e.g. a "banner" agent that orchestrates its own
+  // pm/designer/validator sub-agents). When `isWorkflowCard` is true, the
+  // executor should run this as a nested workflow rather than a leaf agent.
+  isWorkflowCard?: boolean
+  order?: string[]
+  agent?: Record<string, unknown>
+  common?: Record<string, unknown>
 }
 
 export interface WorkflowContext {
@@ -47,12 +55,23 @@ export function getRetryCount(): number {
   return retryCount
 }
 
+export function setRetryCount(count: number): void {
+  retryCount = count
+}
+
 export function getWorkflowContext(): WorkflowContext | null {
   return currentWorkflowContext
 }
 
 export function setSubAgentExecutor(
-  executor: ((agentKey: string, message: string, retryCount: number) => Promise<string>) | null
+  executor:
+    | ((
+        agentKey: string,
+        message: string,
+        retryCount: number,
+        currentPageId: string
+      ) => Promise<string>)
+    | null
 ): void {
   subAgentExecutor = executor
 }
@@ -67,6 +86,10 @@ export function addWorkflowStepResult(result: WorkflowStepResult): void {
 
 export function getWorkflowHistory(): WorkflowStepResult[] {
   return [...workflowHistory]
+}
+
+export function setWorkflowHistory(entries: WorkflowStepResult[]): void {
+  workflowHistory = [...entries]
 }
 
 export function clearWorkflowHistory(): void {
