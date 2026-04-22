@@ -1,0 +1,186 @@
+{
+  "isWorkflowCard": true,
+  "order": ["pm", "designer", "validator"],
+  "agent": {
+    "pm": {
+      "role": "You are a project manager. Request user input, relay input/output to appropriate sub-agents using 'create_sub_agent' tool, and follow the workflow process to get final output.",
+      "workflow": {
+        "badge": {
+          "type": {
+            "shape": ["shield", "line"],
+            "color": ["red", "purple", "blue", "green", "pink", "orange", "black"]
+          },
+          "badge_rules": {
+            "is_optional": true,
+            "max_shape": 1,
+            "max_color": 1,
+            "required_text": true,
+            "required_color": true
+          }
+        },
+        "steps": [
+          "STEP1: Request the user inputs by refering to workflow.badge.type and worfklow.badge.badge_rules and guide the user what to input by providing options. If user does not want to proceed with this step as it is not required field, finish workflow",
+          "STEP2: Use 'create_sub_agent' with agent_key='designer' and send the user text input",
+          "STEP3: Read the designer response and decide success/failure before proceeding to next step. Call 'check_workflow_status' with step_name='design' and decide success=true if the designer indicates the creation succeeded (e.g. mentions SUCCESS/PASS or clearly reports a completed creation) and success=false otherwise, and reason=<short summary of why>.",
+          "STEP4: If STEP3 success is false, report failure to the user and call reset_context_and_retry and go back to STEP2.",
+          "STEP5: If STEP3 success is true, use create_sub_agent with agent_key='validator' and send validation request.",
+          "STEP6: Read the validator response and decide success/failure before proceeding to next step. Call 'check_workflow_status' with step_name='validation' and decide success=true only if validation clearly passes (e.g. PASS) and success=false otherwise (FAIL or ambiguous), and reason=<short summary of why>.",
+          "STEP7: If STEP6 success is false and retryCount < 3, call delete_workflow_nodes to delete 'kakao-banner-badge' frame and reset_context_and_retry with reason='Validation failed' and go back to STEP3.",
+          "STEP8: If STEP6 success is true, finish workflow by returning DONE and do not provide summary. If retryCount > 3, finish workflow by returning FAIL."
+        ]
+      }
+    },
+    "designer": {
+      "role": "Create requested visual layout on the given currentPageId. Follow strictly with common rule guides. If shape is badge, update badge-icon shape using 'apply_photo_from_url' of the color. If shape is line, update fill color with the use input color. Do not omit text layers when non-empty input is present.",
+      "workflow": [
+        { "step": 1, "message": "Read user text input and identify the actual provided text values for text layers" },
+        { "step": 2, "tool": ["render", "apply_photo_from_url"], "message": "Render frame-line or frame-badge, badge icon and badge text depending on user input of badge type shape." }
+      ],
+      "output": [
+        "return SUCCESS if creation is done with summary of creation",
+        "return ERROR if any expected layer has not been created and summary of the failure"
+      ]
+    },
+    "validator": {
+      "role": "Validate the content with given checklist common rules and return result. Ignore layer name strictness. Only proceed with validation for existing layers in the frame.",
+      "workflow": {
+        "validate": {
+          "check": [
+            "Check all shape and text exist in current page",
+            "Check all shape and text properties are valid text and numbers with no NaN",
+            "Check fontFamily, fontSize and lineHeight for text",
+            "Check color if badge shape line, skip color url if badge shape shield",
+            "Use count_text_length to check character length and follows max_characters rule",
+            "Use figma_plugin tool and get_current_page_children tool to check existing text layer's follow font size, color, line height, letter-spacing, max characters, margin, stated in common rules"
+          ]
+        },
+        "output": [
+          "return PASS if all validation pass",
+          "return FAIL if any one validation fail and summary of checked validations"
+        ]
+      }
+    }
+  },
+  "common": {
+    "badge": {
+      "shield": {
+        "color" : {
+          "red": "https://workflow.mzai.co.kr/uploads/images/21b2378c7f1d2b71447f5cc847039f1a.png",
+          "purple": "https://workflow.mzai.co.kr/uploads/images/842fb70919cc064cee2bc55bf4b51f8f.png",
+          "blue": "https://workflow.mzai.co.kr/uploads/images/531d53905b2d0af74c08a82efd3a8906.png",
+          "green": "https://workflow.mzai.co.kr/uploads/images/dc9a036ad34d206188d283523ee5cceb.png",
+          "pink": "https://workflow.mzai.co.kr/uploads/images/5345f702fad2d0a5c1a09c910d53909d.png",
+          "orange": "https://workflow.mzai.co.kr/uploads/images/415330b28a2b5cb0ed2596a164cd7451.png",
+          "black": "https://workflow.mzai.co.kr/uploads/images/693851abf2da75b8f188d65257f89d3c.png"
+        }
+      },
+      "line": {
+        "color": {
+          "red": "rgb(238, 46, 4)",
+          "orange": "rgb(238, 109, 4)",
+          "pink": "rgb(237, 102, 137)",
+          "blue": "rgb(0, 114, 221)",
+          "green": "rgb(37, 176, 109)",
+          "purple": "rgb(107, 82, 203)",
+          "black": "rgb(18, 18, 18)"
+        }
+      }
+    },
+    "frame-line": {
+      "shape": "frame",
+      "position": { "x": 0, "y": 300 },
+      "name": "kakao-banner-badge",
+      "width": 315,
+      "height": 50,
+      "layout": "auto",
+      "flex": "row",
+      "icon": {
+        "shape": "rectangle",
+        "name": "badge-icon",
+        "width": 315,
+        "height": 50,
+        "opacity": 0.75,
+        "bottomRightRadius": 11,
+        "bottomLeftRadius": 11,
+        "color": "#EE2E04"
+      },
+      "text": {
+        "shape": "text",
+        "align": "center",
+        "width": 315,
+        "height" : 32,
+        "fontSize": 28,
+        "lineHeight": {
+          "unit": "PIXELS",
+          "value": 32.0
+        },
+        "opacity": 1,
+        "color": "rgb(255,255,255)",
+        "text_align": "center",
+        "fontWeight": "Bold",
+        "fontFamily": "Arial Rounded MT Bold",
+        "constraints": {
+          "max_characters": 8,
+          "must_not_overflow_or_clip": true
+        }
+      }
+    },
+    "frame-badge": {
+      "shape": "frame",
+      "position": { "x": 0, "y": 300 },
+      "name": "kakao-banner-badge",
+      "layout": "auto",
+      "flex": "col",
+      "width": 81,
+      "height": 83,
+      "px": 5,
+      "py": {
+        "double_line": 8,
+        "single_line": 0
+      },
+      "opacity": 1,
+      "icon": {
+        "shape": "rectangle",
+        "name": "badge-icon",
+        "radius": 0,
+        "width": 81,
+        "height": 83,
+        "opacity": 1,
+        "color": "rgb(199, 199, 205)"
+      },
+      "text":{ 
+        "shape": "text",
+        "align": "center",
+        "opacity": 1,
+        "color": "rgb(255,255,255)",
+        "text_align": "center",
+        "fontWeight": "bold",
+        "fontFamily": "Arial Rounded MT Bold",
+        "constraints": {
+          "max_characters_per_line": 3,
+          "max_lines": 2,
+          "must_not_overflow_or_clip": true,
+          "single_line": {
+            "fontSize": 30,
+            "lineHeight": {
+              "unit": "PIXELS",
+              "value": 33.0
+            },
+            "width": 67,
+            "height": 33,
+            "pt": 18
+          },
+          "double_line": {
+            "fontSize": 25,
+            "lineHeight": {
+              "unit": "PIXELS",
+              "value": 28.0
+            },
+            "width": 67,
+            "height": 61
+          }
+        }
+      }
+    }
+  }
+}
