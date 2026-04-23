@@ -176,22 +176,31 @@ export const checkWorkflowStatus = defineTool({
   name: 'check_workflow_status',
   description: `Record the success/failure status of a workflow step.
 Use this after evaluating a sub-agent's response to explicitly log whether the step succeeded.
-The caller (PM) decides success/failure and provides the reason; this tool stores it in the workflow history and returns the current history so PM can decide the next action.`,
+The caller (PM) decides success/failure based on the sub-agent's response and provides the reason; this tool stores it in the workflow history and returns the current history so PM can decide the next action.
+
+How to decide \`success\`:
+- Set \`success=true\` when the sub-agent's response contains an explicit completion signal (e.g., SUCCESS, PASS, DONE, COMPLETED) OR otherwise clearly states that the requested task was successfully created/rendered/delivered. Do NOT require the exact word "SUCCESS".
+- Treat mixed responses as success when completion is reported and any remaining notes are non-blocking (e.g., minor observations, already-applied adjustments, or cosmetic remarks).
+- Set \`success=false\` only when the response shows the task was not completed, was aborted, or required output is still missing.
+
+Always provide a short \`reason\` summarizing why the step is considered success or failure.`,
   params: {
     step_name: {
       type: 'string',
-      description: 'Name of the workflow step being checked (e.g., "designer_task", "validation")',
+      description:
+        'Name of the workflow step being checked (e.g., "banner", "designer_task", "validation").',
       required: true
     },
     success: {
       type: 'boolean',
-      description: 'Whether the step succeeded. true for success, false for failure.',
+      description:
+        'Whether the step succeeded. Set true if the sub-agent response contains an explicit completion signal (SUCCESS, PASS, DONE, COMPLETED) or otherwise clearly states that the requested task was successfully created/rendered/delivered — the exact word "SUCCESS" is NOT required. Treat mixed responses as success when completion is reported and remaining notes are non-blocking. Set false only when the task was not completed or required output is still missing.',
       required: true
     },
     reason: {
       type: 'string',
       description:
-        'Human-readable reason summarizing why the step is considered success or failure.',
+        'Short human-readable summary explaining why the step is considered success or failure (e.g., which completion signal was detected, or what was missing).',
       required: true
     }
   },
