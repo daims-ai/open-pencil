@@ -74,6 +74,16 @@ const currentChat = computed(() => {
 const messages = computed(() => currentChat.value?.messages ?? [])
 const status = computed(() => currentChat.value?.status ?? 'ready')
 
+// When a workflow is active, the very first message is the kickoff payload
+// (workflow JSON / leaf agent payload) sent by initializeWorkflow. Hide it
+// from the UI but keep it in the chat so the model still sees it.
+const displayedMessages = computed(() => {
+  if (workflowActive.value && messages.value.length > 0) {
+    return messages.value.slice(1)
+  }
+  return messages.value
+})
+
 async function submitExternalPromptIfReady() {
   if (!isConfigured.value || status.value !== 'ready') return
 
@@ -508,7 +518,7 @@ function handleClearChat() {
         <ScrollAreaViewport class="h-full px-3 py-3 [&>div]:h-full">
           <!-- Empty state -->
           <div
-            v-if="messages.length === 0"
+            v-if="displayedMessages.length === 0"
             data-test-id="agent-empty-state"
             class="flex h-full flex-col items-center justify-center gap-3 text-muted"
           >
@@ -518,7 +528,7 @@ function handleClearChat() {
 
           <!-- Messages -->
           <div v-else data-test-id="agent-messages" class="flex flex-col gap-3">
-            <ChatMessage v-for="msg in messages" :key="msg.id" :message="msg" />
+            <ChatMessage v-for="msg in displayedMessages" :key="msg.id" :message="msg" />
 
             <!-- Thinking indicator: shown when AI is working but no visible activity -->
             <div v-if="isThinking" data-test-id="agent-typing-indicator" class="flex gap-2">
