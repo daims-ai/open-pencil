@@ -6,6 +6,7 @@ export interface OpenPencilConfig {
   providerID: string
   apiKey: string
   daimsApiKey?: string
+  prompt?: string
 }
 
 export interface OpenPencilMessage<T = unknown> {
@@ -31,6 +32,7 @@ export interface DaimsAssetImage {
 const externalConfig = ref<OpenPencilConfig | null>(null)
 const configReceived = ref(false)
 const daimsAssetImages = shallowRef<DaimsAssetImage[]>([])
+let externalPromptConsumed = false
 
 let fontRequestId = 0
 const pendingFontRequests = new Map<number, (data: ArrayBuffer | null) => void>()
@@ -141,6 +143,13 @@ export function waitForExternalConfig(): Promise<OpenPencilConfig> {
   })
 }
 
+export function consumeExternalPrompt(): string | null {
+  const prompt = externalConfig.value?.prompt?.trim()
+  if (!prompt || externalPromptConsumed) return null
+  externalPromptConsumed = true
+  return prompt
+}
+
 export function postMessageToParent(type: string, payload: unknown): void {
   if (!IS_FROM_DAIMS) return
   window.parent.postMessage({ type, payload }, '*')
@@ -152,6 +161,7 @@ export function useElectronBridge() {
     configReceived: readonly(configReceived),
     daimsAssetImages: readonly(daimsAssetImages),
     waitForExternalConfig,
+    consumeExternalPrompt,
     postMessageToParent,
     requestAssetImagePlace
   }

@@ -5,6 +5,8 @@ import { computed, markRaw, nextTick, ref, watch } from 'vue'
 import { getAcpDebugText, clearAcpDebugLog, hasAcpDebugEntries } from '@/ai/acp-transport'
 import { copyChatLog } from '@/ai/chat-debug'
 import { clearToolLogEntries, didHitStepLimit } from '@/ai/tools'
+import { useElectronBridge } from '@/bridge/electron-bridge'
+import { useEditorStore } from '@/stores/editor'
 import { activeTab } from '@/stores/tabs'
 import ACPPermissionDialog from '@/components/chat/ACPPermissionDialog.vue'
 import ChatInput from '@/components/chat/ChatInput.vue'
@@ -30,6 +32,8 @@ import type { DaimsWorkflow, SubAgentConfig } from '@open-pencil/core'
 const IS_DEV = import.meta.env.DEV
 
 const { isConfigured, ensureChat, resetChat } = useAIChat()
+const { externalConfig, consumeExternalPrompt } = useElectronBridge()
+const store = useEditorStore()
 const { dialogs } = useI18n()
 
 const chat = ref<Chat<UIMessage> | null>(null)
@@ -69,6 +73,26 @@ const currentChat = computed(() => {
 
 const messages = computed(() => currentChat.value?.messages ?? [])
 const status = computed(() => currentChat.value?.status ?? 'ready')
+
+async function submitExternalPromptIfReady() {
+  if (!isConfigured.value || status.value !== 'ready') return
+
+  const prompt = consumeExternalPrompt()
+  if (!prompt) return
+
+  store.state.activeRibbonTab = 'agent'
+  await nextTick()
+  await handleSubmit(prompt)
+}
+
+watch(
+  [() => externalConfig.value?.prompt, isConfigured, status],
+  () => {
+    void submitExternalPromptIfReady()
+  },
+  { immediate: true }
+)
+
 const isThinking = computed(() => {
   const s = status.value
   if (s !== 'submitted' && s !== 'streaming') return false
