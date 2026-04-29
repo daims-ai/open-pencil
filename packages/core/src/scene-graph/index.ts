@@ -78,6 +78,61 @@ export function cloneVectorNetwork(vn: VectorNetwork): VectorNetwork {
   }
 }
 
+/**
+ * Validate a VectorNetwork structure, returning an array of error messages.
+ * Empty array means the network is valid.
+ */
+export function validateVectorNetwork(vn: VectorNetwork): string[] {
+  const errors: string[] = []
+  if (!Array.isArray(vn.vertices)) {
+    errors.push('vertices must be an array')
+    return errors
+  }
+  if (!Array.isArray(vn.segments)) {
+    errors.push('segments must be an array')
+    return errors
+  }
+  if (!Array.isArray(vn.regions)) errors.push('regions must be an array')
+  const vertexCount = vn.vertices.length
+  for (let i = 0; i < vn.vertices.length; i++) {
+    const v = vn.vertices[i]
+    if (typeof v.x !== 'number' || typeof v.y !== 'number') {
+      errors.push(`vertex[${i}]: x and y must be numbers`)
+    }
+  }
+  for (let i = 0; i < vn.segments.length; i++) {
+    const s = vn.segments[i]
+    if (typeof s.start !== 'number' || typeof s.end !== 'number') {
+      errors.push(`segment[${i}]: start and end must be numbers`)
+    } else {
+      if (s.start < 0 || s.start >= vertexCount)
+        errors.push(`segment[${i}]: start index ${s.start} out of range`)
+      if (s.end < 0 || s.end >= vertexCount)
+        errors.push(`segment[${i}]: end index ${s.end} out of range`)
+    }
+  }
+  return errors
+}
+
+/**
+ * Ensure every segment has tangentStart/tangentEnd.
+ * Missing tangents default to {x:0, y:0} (straight line segments).
+ * Use at system boundaries where input may come from JSON/MCP.
+ */
+export function normalizeVectorNetwork(vn: VectorNetwork): VectorNetwork {
+  const ZERO: Vector = { x: 0, y: 0 }
+  return {
+    vertices: vn.vertices,
+    segments: vn.segments.map((s) => ({
+      start: s.start,
+      end: s.end,
+      tangentStart: (s as Partial<VectorSegment>).tangentStart ?? { ...ZERO },
+      tangentEnd: (s as Partial<VectorSegment>).tangentEnd ?? { ...ZERO }
+    })),
+    regions: vn.regions
+  }
+}
+
 export interface GeometryPath {
   windingRule: WindingRule
   commandsBlob: Uint8Array
@@ -257,6 +312,7 @@ export interface SceneNode {
   width: number
   height: number
   rotation: number
+  figmaDerivedLayout: { x?: number; y?: number; width?: number; height?: number } | null
 
   fills: Fill[]
   strokes: Stroke[]
@@ -418,6 +474,7 @@ function createDefaultNode(type: NodeType, overrides: Partial<SceneNode> = {}): 
     width: 100,
     height: 100,
     rotation: 0,
+    figmaDerivedLayout: null,
     fills:
       type === 'TEXT'
         ? [{ type: 'SOLID' as const, color: { r: 0, g: 0, b: 0, a: 1 }, opacity: 1, visible: true }]
@@ -682,12 +739,24 @@ export class SceneGraph {
     if (visited?.has(variableId)) return undefined
     const variable = this.variables.get(variableId)
     if (!variable) return undefined
-    const resolvedModeId = modeId ?? this.getActiveModeId(variable.collectionId)
-    const value = variable.valuesByMode[resolvedModeId]
-    if (typeof value === 'object' && 'aliasId' in value) {
+    const collection = this.variableCollections.get(variable.collectionId)
+    const preferredModeId = modeId ?? this.getActiveModeId(variable.collectionId)
+    const fallbackModeId = collection?.defaultModeId
+    let value = Object.hasOwn(variable.valuesByMode, preferredModeId)
+      ? variable.valuesByMode[preferredModeId]
+      : undefined
+    if (
+      value === undefined &&
+      fallbackModeId &&
+      Object.hasOwn(variable.valuesByMode, fallbackModeId)
+    ) {
+      value = variable.valuesByMode[fallbackModeId]
+    }
+    value ??= Object.values(variable.valuesByMode)[0]
+    if (value && typeof value === 'object' && 'aliasId' in value) {
       const seen = visited ?? new Set<string>()
       seen.add(variableId)
-      return this.resolveVariable(value.aliasId, undefined, seen)
+      return this.resolveVariable(value.aliasId, preferredModeId, seen)
     }
     return value
   }
@@ -756,8 +825,9 @@ export class SceneGraph {
     if (cached) return cached
 
     const node = this.getNode(id)
+    if (!node) return { x: 0, y: 0 }
 
-    const result = getAbsolutePosition(node!, this)
+    const result = getAbsolutePosition(node, this)
     this.absPosCache.set(id, result)
     return result
   }
@@ -840,6 +910,9 @@ export class SceneGraph {
       Object.keys(changes).some((k) => SceneGraph.TEXT_PICTURE_KEYS.has(k))
     ) {
       node.textPicture = null
+    }
+    if (changes.vectorNetwork) {
+      changes = { ...changes, vectorNetwork: normalizeVectorNetwork(changes.vectorNetwork) }
     }
     Object.assign(node, changes)
     this.emitter.emit('node:updated', id, changes)

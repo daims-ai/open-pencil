@@ -48,6 +48,8 @@ export function guidToString(guid: GUID): string {
 }
 
 export function stringToGuid(str: string): GUID {
+  const match = str.match(/^(?:VariableID:|VariableCollectionId:)?(\d+):(\d+)$/)
+  if (match) return { sessionID: parseInt(match[1], 10), localID: parseInt(match[2], 10) }
   const [session, local] = str.split(':')
   return { sessionID: parseInt(session, 10), localID: parseInt(local, 10) }
 }
@@ -92,17 +94,20 @@ function convertGradientTransform(t?: Matrix): GradientTransform | undefined {
   return { m00: t.m00, m01: t.m01, m02: t.m02, m10: t.m10, m11: t.m11, m12: t.m12 }
 }
 
-let variableColorResolver: ((guid: GUID) => Color | null) | null = null
+type VariableAliasRef = NonNullable<NonNullable<NonNullable<Paint['colorVar']>['value']>['alias']>
 
-export function setVariableColorResolver(resolver: ((guid: GUID) => Color | null) | null): void {
+let variableColorResolver: ((alias: VariableAliasRef) => Color | null) | null = null
+
+export function setVariableColorResolver(
+  resolver: ((alias: VariableAliasRef) => Color | null) | null
+): void {
   variableColorResolver = resolver
 }
 
 function resolveColorVar(paint: Paint): Color | undefined {
   const alias = paint.colorVar?.value?.alias
   if (!alias || !variableColorResolver) return undefined
-  if (alias.guid) return variableColorResolver(alias.guid) ?? undefined
-  return undefined
+  return variableColorResolver(alias) ?? undefined
 }
 
 export function convertFills(paints?: Paint[]): Fill[] {
@@ -149,8 +154,8 @@ export function convertStrokes(
   paints?: Paint[],
   weight?: number,
   align?: string,
-  cap?: string,
-  join?: string,
+  cap?: StrokeCap,
+  join?: StrokeJoin,
   dashPattern?: number[]
 ): Stroke[] {
   if (!paints) return []
@@ -164,8 +169,8 @@ export function convertStrokes(
     opacity: p.opacity ?? 1,
     visible: p.visible ?? true,
     align: strokeAlign,
-    cap: (cap ?? 'NONE') as StrokeCap,
-    join: (join ?? 'MITER') as StrokeJoin,
+    cap: cap ?? 'NONE',
+    join: join ?? 'MITER',
     dashPattern: dashPattern ?? []
   }))
 }
@@ -242,6 +247,7 @@ export function mapStackJustify(justify?: string): LayoutAlign {
     case 'MAX':
       return 'MAX'
     case 'SPACE_BETWEEN':
+    case 'SPACE_EVENLY':
       return 'SPACE_BETWEEN'
     default:
       return 'MIN'
@@ -538,18 +544,31 @@ function extractPluginRelaunchData(nc: NodeChange): PluginRelaunchDataEntry[] {
 function convertTransformProps(
   nc: NodeChange
 ): Pick<SceneNode, 'x' | 'y' | 'width' | 'height' | 'rotation' | 'flipX' | 'flipY'> {
-  const x = nc.transform?.m02 ?? 0
-  const y = nc.transform?.m12 ?? 0
   const width = nc.size?.x ?? 100
   const height = nc.size?.y ?? 100
 
+  let x = nc.transform?.m02 ?? 0
+  let y = nc.transform?.m12 ?? 0
   let rotation = 0
   let flipX = false
   if (nc.transform) {
-    const det = nc.transform.m00 * nc.transform.m11 - nc.transform.m01 * nc.transform.m10
+    const t = nc.transform
+    const det = t.m00 * t.m11 - t.m01 * t.m10
     if (det < 0) flipX = true
     const sx = flipX ? -1 : 1
-    rotation = Math.atan2(nc.transform.m10 * sx, nc.transform.m00 * sx) * (180 / Math.PI)
+    rotation = Math.atan2(t.m10 * sx, t.m00 * sx) * (180 / Math.PI)
+
+    const corners = [
+      { x: 0, y: 0 },
+      { x: width, y: 0 },
+      { x: 0, y: height },
+      { x: width, y: height }
+    ].map((point) => ({
+      x: t.m00 * point.x + t.m01 * point.y + t.m02,
+      y: t.m10 * point.x + t.m11 * point.y + t.m12
+    }))
+    x = Math.min(...corners.map((point) => point.x))
+    y = Math.min(...corners.map((point) => point.y))
   }
 
   return { x, y, width, height, rotation, flipX, flipY: false }
@@ -685,32 +704,29 @@ function convertLayoutProps(
   }
 }
 
-function convertVectorAndStrokeProps(
-  nc: NodeChange,
-  blobs: Uint8Array[]
-): Pick<
-  SceneNode,
-  | 'vectorNetwork'
-  | 'fillGeometry'
-  | 'strokeGeometry'
-  | 'arcData'
-  | 'strokeCap'
-  | 'strokeJoin'
-  | 'dashPattern'
-  | 'borderTopWeight'
-  | 'borderRightWeight'
-  | 'borderBottomWeight'
-  | 'borderLeftWeight'
-  | 'independentStrokeWeights'
-  | 'strokeMiterLimit'
-> {
+function getVectorStrokeCap(nc: NodeChange, vectorNetwork: VectorNetwork | null): StrokeCap {
+  return (nc.strokeCap ??
+    vectorNetwork?.vertices.find((v) => v.strokeCap)?.strokeCap ??
+    'NONE') as StrokeCap
+}
+
+function getVectorStrokeJoin(nc: NodeChange, vectorNetwork: VectorNetwork | null): StrokeJoin {
+  return (nc.strokeJoin ??
+    vectorNetwork?.vertices.find((v) => v.strokeJoin)?.strokeJoin ??
+    'MITER') as StrokeJoin
+}
+
+function convertVectorAndStrokeProps(nc: NodeChange, blobs: Uint8Array[]) {
+  const vectorNetwork = resolveVectorNetwork(nc, blobs)
+  const strokeCap = getVectorStrokeCap(nc, vectorNetwork)
+  const strokeJoin = getVectorStrokeJoin(nc, vectorNetwork)
   return {
-    vectorNetwork: resolveVectorNetwork(nc, blobs),
+    vectorNetwork,
     fillGeometry: resolveGeometryPaths(nc.fillGeometry, blobs),
     strokeGeometry: resolveGeometryPaths(nc.strokeGeometry, blobs),
     arcData: mapArcData(nc.arcData as Partial<ArcData> | undefined),
-    strokeCap: (nc.strokeCap ?? 'NONE') as StrokeCap,
-    strokeJoin: (nc.strokeJoin ?? 'MITER') as StrokeJoin,
+    strokeCap,
+    strokeJoin,
     dashPattern: nc.dashPattern ?? [],
     borderTopWeight: (nc.borderTopWeight ?? 0) as number,
     borderRightWeight: (nc.borderRightWeight ?? 0) as number,
@@ -728,6 +744,8 @@ export function nodeChangeToProps(
   let nodeType = mapNodeType(nc.type)
   if (nodeType === 'FRAME' && isComponentSet(nc)) nodeType = 'COMPONENT_SET'
 
+  const vectorAndStrokeProps = convertVectorAndStrokeProps(nc, blobs)
+
   return {
     nodeType,
     name: nc.name ?? nodeType,
@@ -741,8 +759,8 @@ export function nodeChangeToProps(
       nc.strokePaints,
       nc.strokeWeight,
       nc.strokeAlign,
-      nc.strokeCap,
-      nc.strokeJoin,
+      vectorAndStrokeProps.strokeCap,
+      vectorAndStrokeProps.strokeJoin,
       nc.dashPattern ?? []
     ),
     effects: convertEffects(nc.effects),
@@ -751,7 +769,7 @@ export function nodeChangeToProps(
     horizontalConstraint: mapConstraint(nc.horizontalConstraint as string),
     verticalConstraint: mapConstraint(nc.verticalConstraint as string),
     ...convertLayoutProps(nc),
-    ...convertVectorAndStrokeProps(nc, blobs),
+    ...vectorAndStrokeProps,
     minWidth: (nc.minWidth ?? null) as number | null,
     maxWidth: (nc.maxWidth ?? null) as number | null,
     minHeight: (nc.minHeight ?? null) as number | null,

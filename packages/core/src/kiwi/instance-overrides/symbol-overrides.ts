@@ -2,7 +2,33 @@ import { guidToString } from '../convert'
 import { convertOverrideToProps } from '../convert-overrides'
 import { resolveOverrideTarget, repopulateInstance } from './resolve'
 
+import type { SceneNode } from '../../scene-graph'
 import type { OverrideContext } from './types'
+
+function isActiveInstance(ctx: OverrideContext, nodeId: string | undefined): nodeId is string {
+  return nodeId !== undefined && (!ctx.activeNodeIds || ctx.activeNodeIds.has(nodeId))
+}
+
+function preserveStrokeShapeProps(target: SceneNode, updates: Partial<SceneNode>): void {
+  if (!updates.strokes) return
+  updates.strokes = updates.strokes.map((stroke, index) => {
+    if (index >= target.strokes.length) {
+      return {
+        ...stroke,
+        cap: target.strokeCap,
+        join: target.strokeJoin,
+        dashPattern: target.dashPattern
+      }
+    }
+    const existing = target.strokes[index]
+    return {
+      ...stroke,
+      cap: existing.cap,
+      join: existing.join,
+      dashPattern: existing.dashPattern
+    }
+  })
+}
 
 /**
  * Apply symbolOverrides from kiwi data.
@@ -21,7 +47,7 @@ export function applySymbolOverrides(ctx: OverrideContext): Set<string> {
     if (!overrides?.length) continue
 
     const nodeId = ctx.guidToNodeId.get(ncId)
-    if (!nodeId) continue
+    if (!isActiveInstance(ctx, nodeId)) continue
 
     for (const ov of overrides) {
       const guids = ov.guidPath?.guids
@@ -30,9 +56,6 @@ export function applySymbolOverrides(ctx: OverrideContext): Set<string> {
       const targetId = resolveOverrideTarget(ctx, nodeId, guids)
       if (!targetId) continue
 
-      // When a symbolOverride resolves to the instance itself (self-reference
-      // to the component shell), skip it if the instance has explicit kiwi NC
-      // properties — the instance's own values take precedence.
       if (targetId === nodeId && ctx.kiwiPropertyNodes.has(nodeId)) continue
 
       overriddenNodes.add(targetId)
@@ -51,6 +74,8 @@ export function applySymbolOverrides(ctx: OverrideContext): Set<string> {
 
       const updates = convertOverrideToProps(fields as Record<string, unknown>)
       if (Object.keys(updates).length > 0) {
+        const target = ctx.graph.getNode(targetId)
+        if (target) preserveStrokeShapeProps(target, updates)
         ctx.graph.updateNode(targetId, updates)
       }
     }

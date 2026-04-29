@@ -1,6 +1,7 @@
 import { parseColor } from '../color'
 import { fetchIcons, searchIconsBatch } from '../icons'
 import { createIconFromPaths } from '../icons/render'
+import { normalizeVectorNetwork, validateVectorNetwork } from '../scene-graph'
 import { defineTool, nodeSummary } from './schema'
 
 import type { FigmaNodeProxy } from '../figma-api'
@@ -84,11 +85,12 @@ export const render = defineTool({
       }
     }
 
-    const result = await renderJSX(figma.graph, args.jsx, {
+    const results = await renderJSX(figma.graph, args.jsx, {
       parentId,
       x: args.x,
       y: args.y
     })
+    const result = results[0]
 
     if (args.replace_id && replaceIndex >= 0) {
       figma.graph.reorderChild(result.id, parentId, replaceIndex)
@@ -97,7 +99,15 @@ export const render = defineTool({
       figma.graph.reorderChild(result.id, parentId, args.insert_index)
     }
 
-    return { id: result.id, name: result.name, type: result.type, children: result.childIds }
+    return {
+      id: result.id,
+      name: result.name,
+      type: result.type,
+      children: result.childIds,
+      ...(results.length > 1
+        ? { siblings: results.slice(1).map((r) => ({ id: r.id, name: r.name, type: r.type })) }
+        : {})
+    }
   }
 })
 
@@ -169,7 +179,15 @@ export const createVector = defineTool({
     node.y = args.y
     if (args.name) node.name = args.name
     if (args.path) {
-      figma.graph.updateNode(node.id, { vectorNetwork: JSON.parse(args.path) as VectorNetwork })
+      let parsed: VectorNetwork
+      try {
+        parsed = JSON.parse(args.path) as VectorNetwork
+      } catch {
+        return { error: 'Invalid JSON in path parameter' }
+      }
+      const errors = validateVectorNetwork(parsed)
+      if (errors.length > 0) return { error: `Invalid VectorNetwork: ${errors.join('; ')}` }
+      figma.graph.updateNode(node.id, { vectorNetwork: normalizeVectorNetwork(parsed) })
     }
     if (args.fill) {
       node.fills = [{ type: 'SOLID', color: parseColor(args.fill), opacity: 1, visible: true }]

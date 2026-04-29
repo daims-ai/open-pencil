@@ -16,6 +16,8 @@ import Yoga, {
 } from 'yoga-layout'
 
 import { resolveNodeLayoutDirection } from './text/direction'
+import { weightToStyle } from './text/fonts'
+import { measureTextWithOpenType } from './text/opentype'
 
 import type { GridTrack, SceneGraph, SceneNode } from './scene-graph'
 
@@ -27,6 +29,12 @@ export type TextMeasurer = (
 let globalTextMeasurer: TextMeasurer | null = null
 
 const GLYPH_WIDTH_FACTOR = 0.6
+const yogaConfig = Yoga.Config.create()
+yogaConfig.setPointScaleFactor(0)
+
+function createYogaNode(): YogaNode {
+  return Yoga.Node.create(yogaConfig)
+}
 
 // Rough estimate for text size when CanvasKit/font is not available.
 // DO NOT REMOVE: without this, text nodes keep their 100×100 default size
@@ -34,7 +42,14 @@ const GLYPH_WIDTH_FACTOR = 0.6
 // this when available — this is only the fallback.
 function estimateTextSize(node: SceneNode, maxWidth?: number): { width: number; height: number } {
   const fontSize = node.fontSize || 14
+  const family = node.fontFamily || 'Inter'
+  const style = weightToStyle(node.fontWeight || 400, node.italic)
   const text = node.text || ''
+
+  const explicitLineH = (node.lineHeight ?? 0) > 0 ? (node.lineHeight as number) : undefined
+  const measured = measureTextWithOpenType(text, fontSize, family, style, maxWidth, explicitLineH)
+  if (measured) return measured
+
   const charWidth = fontSize * GLYPH_WIDTH_FACTOR
   const singleLineWidth = Math.ceil(text.length * charWidth)
   const lineH = (node.lineHeight ?? 0) > 0 ? (node.lineHeight as number) : Math.ceil(fontSize * 1.4)
@@ -95,7 +110,7 @@ function computeLayoutsBottomUp(graph: SceneGraph, nodeId: string, visited: Set<
     computeLayoutsBottomUp(graph, childId, visited)
   }
 
-  if (node.layoutMode !== 'NONE') {
+  if (node.layoutMode !== 'NONE' && node.type !== 'INSTANCE') {
     computeLayout(graph, nodeId)
   }
 }
@@ -142,7 +157,7 @@ function configureAsGrid(
 }
 
 function createGridChildNode(child: SceneNode): YogaNode {
-  const yogaChild = Yoga.Node.create()
+  const yogaChild = createYogaNode()
   if (!child.visible) {
     yogaChild.setDisplay(Display.None)
   } else {
@@ -175,14 +190,14 @@ function buildGridTree(
   frame: SceneNode,
   inheritedDirection: 'LTR' | 'RTL'
 ): YogaNode {
-  const root = Yoga.Node.create()
+  const root = createYogaNode()
   const direction = resolveNodeLayoutDirection(frame, inheritedDirection)
   configureAsGrid(root, frame, direction)
 
   const children = graph.getChildren(frame.id)
   for (const child of children) {
     if (child.layoutPositioning === 'ABSOLUTE') {
-      const yogaChild = Yoga.Node.create()
+      const yogaChild = createYogaNode()
       configureAbsoluteChild(yogaChild, child)
       root.insertChild(yogaChild, root.getChildCount())
     } else {
@@ -209,7 +224,7 @@ function buildYogaTree(
   frame: SceneNode,
   inheritedDirection: 'LTR' | 'RTL'
 ): YogaNode {
-  const root = Yoga.Node.create()
+  const root = createYogaNode()
   const direction = resolveNodeLayoutDirection(frame, inheritedDirection)
 
   if (frame.primaryAxisSizing === 'FIXED') {
@@ -225,7 +240,7 @@ function buildYogaTree(
 
   const children = graph.getChildren(frame.id)
   for (const child of children) {
-    const yogaChild = Yoga.Node.create()
+    const yogaChild = createYogaNode()
 
     if (child.layoutPositioning === 'ABSOLUTE') {
       configureAbsoluteChild(yogaChild, child)
@@ -346,7 +361,7 @@ function configureChildAsGrid(
   const grandchildren = graph.getChildren(child.id)
   for (const gc of grandchildren) {
     if (gc.layoutPositioning === 'ABSOLUTE') {
-      const yogaGC = Yoga.Node.create()
+      const yogaGC = createYogaNode()
       configureAbsoluteChild(yogaGC, gc)
       yogaChild.insertChild(yogaGC, yogaChild.getChildCount())
     } else {
@@ -393,7 +408,7 @@ function configureChildAsAutoLayout(
 
   const grandchildren = graph.getChildren(child.id)
   for (const gc of grandchildren) {
-    const yogaGC = Yoga.Node.create()
+    const yogaGC = createYogaNode()
     if (gc.layoutPositioning === 'ABSOLUTE') {
       configureAbsoluteChild(yogaGC, gc)
     } else if (!gc.visible) {
@@ -422,12 +437,22 @@ function configureChildAsLeaf(yogaChild: YogaNode, child: SceneNode, parent: Sce
   if (needsMeasureFunc) {
     configureTextLeaf(yogaChild, child, parent)
   } else if (isText && !globalTextMeasurer && child.textAutoResize !== 'NONE') {
-    // No CanvasKit — use rough estimate so HUG containers don't inherit
-    // the 100×100 default SceneNode size. See estimateTextSize above.
+    // No CanvasKit — prefer stored dimensions from .fig import (Figma's
+    // ground truth) over the rough character-count estimate. Only fall back
+    // to estimateTextSize for newly-created nodes that still carry the
+    // 100×100 default SceneNode size.
+    const hasStoredSize =
+      child.width > 0 && child.height > 0 && !(child.width === 100 && child.height === 100)
+
     if (child.textAutoResize === 'WIDTH_AND_HEIGHT') {
-      const est = estimateTextSize(child)
-      yogaChild.setWidth(est.width)
-      yogaChild.setHeight(est.height)
+      if (hasStoredSize) {
+        yogaChild.setWidth(child.width)
+        yogaChild.setHeight(child.height)
+      } else {
+        const est = estimateTextSize(child)
+        yogaChild.setWidth(est.width)
+        yogaChild.setHeight(est.height)
+      }
     } else if (child.textAutoResize === 'HEIGHT') {
       const stretches =
         child.layoutAlignSelf === 'STRETCH' ||
@@ -435,8 +460,12 @@ function configureChildAsLeaf(yogaChild: YogaNode, child: SceneNode, parent: Sce
       if (!(!isRow && stretches)) {
         yogaChild.setWidth(child.width)
       }
-      const est = estimateTextSize(child, child.width)
-      yogaChild.setHeight(est.height)
+      if (hasStoredSize) {
+        yogaChild.setHeight(child.height)
+      } else {
+        const est = estimateTextSize(child, child.width)
+        yogaChild.setHeight(est.height)
+      }
     }
   } else {
     configureNonTextLeaf(yogaChild, child, isRow, stretchCross)
@@ -593,16 +622,29 @@ function applyFrameSize(graph: SceneGraph, frame: SceneNode, yogaNode: YogaNode)
   const computedH = yogaNode.getComputedHeight()
   const updates: Partial<SceneNode> = {}
 
+  const derived = frame.figmaDerivedLayout
   if (frame.primaryAxisSizing === 'HUG') {
-    if (frame.layoutMode === 'HORIZONTAL') updates.width = computedW
-    else updates.height = computedH
+    if (frame.layoutMode === 'HORIZONTAL') updates.width = derived?.width ?? computedW
+    else updates.height = derived?.height ?? computedH
   }
   if (frame.counterAxisSizing === 'HUG') {
-    if (frame.layoutMode === 'HORIZONTAL') updates.height = computedH
-    else updates.width = computedW
+    if (frame.layoutMode === 'HORIZONTAL') updates.height = derived?.height ?? computedH
+    else updates.width = derived?.width ?? computedW
   }
 
   graph.updateNode(frame.id, updates)
+}
+
+function updateChildFromYoga(graph: SceneGraph, child: SceneNode, yogaChild: YogaNode): void {
+  if (!child.visible || child.layoutPositioning === 'ABSOLUTE' || child.type === 'INSTANCE') return
+
+  const derived = child.figmaDerivedLayout
+  graph.updateNode(child.id, {
+    x: derived?.x ?? yogaChild.getComputedLeft(),
+    y: derived?.y ?? yogaChild.getComputedTop(),
+    width: derived?.width ?? yogaChild.getComputedWidth(),
+    height: derived?.height ?? yogaChild.getComputedHeight()
+  })
 }
 
 function applyYogaLayout(graph: SceneGraph, frame: SceneNode, yogaNode: YogaNode): void {
@@ -616,14 +658,7 @@ function applyYogaLayout(graph: SceneGraph, frame: SceneNode, yogaNode: YogaNode
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!yogaChild) continue
 
-    if (child.visible && child.layoutPositioning !== 'ABSOLUTE') {
-      graph.updateNode(child.id, {
-        x: yogaChild.getComputedLeft(),
-        y: yogaChild.getComputedTop(),
-        width: yogaChild.getComputedWidth(),
-        height: yogaChild.getComputedHeight()
-      })
-    }
+    updateChildFromYoga(graph, child, yogaChild)
 
     if (child.layoutMode !== 'NONE') {
       if (child.layoutMode === 'GRID' && child.visible && child.layoutPositioning !== 'ABSOLUTE') {

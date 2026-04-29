@@ -8,7 +8,7 @@ import {
   DEFAULT_TEXT_HEIGHT,
   degToRad
 } from '@open-pencil/core'
-import { getAbsolutePositionFull } from '@open-pencil/core/canvas/coordinate'
+import { getAbsolutePositionFull } from '@open-pencil/core/canvas'
 import { handleDrawMove, handleDrawUp } from '@open-pencil/vue/shared/input/draw'
 import { hitTestCornerRotationByMatrix } from '@open-pencil/vue/shared/input/geometry'
 import { handleMoveMove, handleMoveUp } from '@open-pencil/vue/shared/input/move'
@@ -350,6 +350,7 @@ export function useCanvasInput(
   }
 
   function onMouseDown(e: MouseEvent) {
+    if (!editor.state.editingTextId) canvasRef.value?.focus()
     editor.setHoveredNode(null)
     const { sx, sy, cx, cy } = getCoords(e)
 
@@ -736,6 +737,24 @@ export function useCanvasInput(
     cursorOverride.value = null
   }
 
+  function startTextEditingAt(hit: SceneNode, cx: number, cy: number) {
+    editor.select([hit.id])
+    editor.startTextEditing(hit.id)
+    const textEd = editor.textEditor
+    if (textEd) {
+      const abs = editor.graph.getAbsolutePosition(hit.id)
+      textEd.selectWordAt(cx - abs.x, cy - abs.y)
+      editor.requestRender()
+    }
+  }
+
+  function getContainerDescendantHit(containerId: string, cx: number, cy: number): SceneNode | null {
+    const hit = editor.graph.hitTestDeep(cx, cy, editor.state.currentPageId)
+    if (!hit) return null
+    if (hit.id === containerId || editor.graph.isDescendant(hit.id, containerId)) return hit
+    return null
+  }
+
   function onDblClick(e: MouseEvent) {
     const nodeEditEditor = editor as Editor & NodeEditMethods
     if (editor.state.editingTextId) return
@@ -749,10 +768,14 @@ export function useCanvasInput(
       selectedNode && selectedId && editor.graph.isContainer(selectedId) && !selectedNode.locked
 
     if (canEnter) {
-      editor.enterContainer(selectedId)
       const useDeep = selectedNode.type === 'COMPONENT' || selectedNode.type === 'INSTANCE'
-      const hit = hitTestInScope(cx, cy, useDeep)
-      if (hit) {
+      const hit = useDeep
+        ? getContainerDescendantHit(selectedId, cx, cy)
+        : hitTestInScope(cx, cy, false)
+      editor.enterContainer(selectedId)
+      if (hit?.type === 'TEXT') {
+        startTextEditingAt(hit, cx, cy)
+      } else if (hit) {
         editor.select([hit.id])
       } else {
         editor.clearSelection()
@@ -765,14 +788,7 @@ export function useCanvasInput(
     if (!hit) return
 
     if (hit.type === 'TEXT') {
-      editor.select([hit.id])
-      editor.startTextEditing(hit.id)
-      const textEd = editor.textEditor
-      if (textEd) {
-        const abs = editor.graph.getAbsolutePosition(hit.id)
-        textEd.selectWordAt(cx - abs.x, cy - abs.y)
-        editor.requestRender()
-      }
+      startTextEditingAt(hit, cx, cy)
       return
     }
 

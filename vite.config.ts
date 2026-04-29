@@ -37,6 +37,14 @@ export default defineConfig(async ({ command }) => ({
   },
   plugins: [
     {
+      name: 'raw-md',
+      transform(code: string, id: string) {
+        if (id.endsWith('.md')) {
+          return { code: `export default ${JSON.stringify(code)}`, map: null }
+        }
+      }
+    },
+    {
       name: 'copy-canvaskit-wasm',
       buildStart() {
         const src = 'node_modules/canvaskit-wasm/bin/canvaskit.wasm'
@@ -70,7 +78,7 @@ export default defineConfig(async ({ command }) => ({
       registerType: 'autoUpdate',
       devOptions: { enabled: false },
       workbox: {
-        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,html,wasm,png,ico,ttf,webmanifest}'],
         navigateFallback: '/index.html'
       },

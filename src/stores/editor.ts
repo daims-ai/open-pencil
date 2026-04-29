@@ -116,7 +116,17 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     scrubInputFocused: false
   })
 
-  const editor = createEditor({ graph, state, loadFont, skipInitialGraphSetup: !!initialGraph })
+  const viewportSize = { width: 0, height: 0 }
+  const editor = createEditor({
+    graph,
+    state,
+    loadFont,
+    skipInitialGraphSetup: !!initialGraph,
+    getViewportSize: () =>
+      viewportSize.width > 0 && viewportSize.height > 0
+        ? viewportSize
+        : { width: window.innerWidth, height: window.innerHeight }
+  })
   const io = new IORegistry(BUILTIN_IO_FORMATS)
 
   if (initialGraph) {
@@ -857,6 +867,16 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     return new Promise((r) => requestAnimationFrame(() => r()))
   }
 
+  function setViewportSize(width: number, height: number) {
+    viewportSize.width = width
+    viewportSize.height = height
+  }
+
+  async function fitCurrentPageToViewport() {
+    await yieldToUI()
+    editor.zoomToFit()
+  }
+
   function setDocumentSource(
     fileName: string,
     sourceFormat: string,
@@ -873,6 +893,18 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     }
   }
 
+  function setPlannedFilePath(path: string) {
+    stopWatchingFile()
+    fileHandle = null
+    filePath = path
+    downloadName = path.split(/[\\/]/).pop() ?? 'Untitled.fig'
+    state.documentName = downloadName.replace(/\.fig$/i, '')
+  }
+
+  function startWatchingCurrentFile() {
+    void startWatchingFile()
+  }
+
   function dispose() {
     stopWatchingFile()
     ;(debouncedAutosave as typeof debouncedAutosave & { cancel?: () => void }).cancel?.()
@@ -882,7 +914,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     try {
       state.loading = true
       await yieldToUI()
-      const imported = await readFigFile(file)
+      const imported = await readFigFile(file, { populate: 'first-page' })
       await yieldToUI()
       editor.replaceGraph(imported)
       editor.undo.clear()
@@ -892,6 +924,7 @@ export function createEditorStore(initialGraph?: SceneGraph) {
       const firstPage = editor.graph.getPages()[0] as SceneNode | undefined
       const pageId = firstPage?.id ?? editor.graph.rootId
       await editor.switchPage(pageId)
+      await fitCurrentPageToViewport()
       editor.requestRender()
     } catch (e) {
       console.error('Failed to open .fig file:', e)
@@ -1000,11 +1033,11 @@ export function createEditorStore(initialGraph?: SceneGraph) {
       const bytes = await tauriRead(filePath)
       const blob = new Blob([bytes])
       const file = new File([blob], state.documentName + '.fig')
-      const imported = await readFigFile(file)
+      const imported = await readFigFile(file, { populate: 'first-page' })
       editor.replaceGraph(imported)
     } else if (fileHandle) {
       const file = await fileHandle.getFile()
-      const imported = await readFigFile(file)
+      const imported = await readFigFile(file, { populate: 'first-page' })
       editor.replaceGraph(imported)
     } else {
       return
@@ -1264,9 +1297,13 @@ export function createEditorStore(initialGraph?: SceneGraph) {
     nodeEditDeleteSelected,
     nodeEditBreakAtVertex,
     openFigFile,
+    setViewportSize,
+    fitCurrentPageToViewport,
     saveFigFile,
     saveFigFileAs,
     setDocumentSource,
+    setPlannedFilePath,
+    startWatchingCurrentFile,
     dispose,
     renderExportImage,
     listSelectionExportFormats,
