@@ -43,10 +43,10 @@ const store = useEditorStore()
               {{ panels.layers }}
             </TabsTrigger>
             <TabsTrigger
-              value="daims-assets"
+              value="assets"
               class="text-[11px] tracking-wider text-muted uppercase hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
             >
-              Daims-Assets
+              Assets
             </TabsTrigger>
           </TabsList>
           <TabsContent
@@ -57,7 +57,7 @@ const store = useEditorStore()
           >
             <LayerTree data-test-id="layers-tree" />
           </TabsContent>
-          <TabsContent value="daims-assets" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <TabsContent value="assets" class="flex min-h-0 flex-1 flex-col overflow-hidden">
             <DaimsAssetPanel />
           </TabsContent>
         </TabsRoot>
