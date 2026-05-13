@@ -70,8 +70,9 @@ export function useTypography(options: UseTypographyOptions = {}) {
     if (!options.loadFont) return
 
     pendingFontLoads.value++
-    void options
-      .loadFont(family, style)
+    void Promise.resolve()
+      .then(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())))
+      .then(() => options.loadFont?.(family, style))
       .then(() => {
         const current = editor.getNode(nodeId)
         if (!current || current.type !== 'TEXT') return

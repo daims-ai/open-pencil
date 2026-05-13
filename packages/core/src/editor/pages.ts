@@ -43,17 +43,29 @@ export function createPageActions(ctx: EditorContext) {
       ctx.state.pageColor = { ...getDefaultCanvasBgColor() }
     }
 
+    if (ctx.getRenderer()) {
+      computeAllLayouts(ctx.graph, pageId)
+    }
+    ctx.requestRender()
+
     const toLoad = collectFontKeys(
       ctx.graph,
       ctx.graph.getChildren(pageId).map((n) => n.id)
     )
     if (toLoad.length > 0) {
-      await Promise.all(toLoad.map(([family, style]) => ctx.loadFont(family, style)))
+      void Promise.all(toLoad.map(([family, style]) => ctx.loadFont(family, style)))
+        .then(() => {
+          if (ctx.getRenderer()) {
+            computeAllLayouts(ctx.graph, pageId)
+          }
+          if (ctx.state.currentPageId === pageId) {
+            ctx.requestRender()
+          }
+        })
+        .catch((e) => {
+          console.warn('Failed to load page fonts:', e)
+        })
     }
-    if (ctx.getRenderer()) {
-      computeAllLayouts(ctx.graph, pageId)
-    }
-    ctx.requestRender()
   }
 
   function addPage(name?: string) {
