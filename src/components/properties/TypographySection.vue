@@ -34,6 +34,12 @@ const sectionCls = useSectionUI()
           :model-value="ctx.node.value.fontFamily"
           @select="ctx.setFamily"
         />
+        <Tip v-if="ctx.isFontLoading.value" label="Loading font…">
+          <icon-lucide-loader-circle
+            data-test-id="typography-font-loading"
+            class="size-3.5 shrink-0 animate-spin text-muted"
+          />
+        </Tip>
         <Tip
           v-if="ctx.hasMissingFonts.value"
           :label="

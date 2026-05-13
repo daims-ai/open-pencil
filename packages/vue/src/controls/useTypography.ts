@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { FONT_WEIGHT_NAMES, weightToStyle } from '@open-pencil/core'
 import { useEditor } from '@open-pencil/vue/context/editorContext'
@@ -43,6 +43,8 @@ export function useTypography(options: UseTypographyOptions = {}) {
   const fontFamily = computed(() => node.value?.fontFamily ?? '')
   const fontWeight = computed(() => node.value?.fontWeight ?? 400)
   const fontSize = computed(() => node.value?.fontSize ?? 16)
+  const pendingFontLoads = ref(0)
+  const isFontLoading = computed(() => pendingFontLoads.value > 0)
 
   const currentWeightLabel = computed(
     () => FONT_WEIGHT_NAMES[node.value?.fontWeight ?? 400] ?? 'Regular'
@@ -59,21 +61,53 @@ export function useTypography(options: UseTypographyOptions = {}) {
     return result
   })
 
-  async function doLoadFont(family: string, style: string) {
-    if (options.loadFont) await options.loadFont(family, style)
+  function loadFontInBackground(
+    family: string,
+    style: string,
+    nodeId: string,
+    changes: Partial<SceneNode>
+  ) {
+    if (!options.loadFont) return
+
+    pendingFontLoads.value++
+    void options
+      .loadFont(family, style)
+      .then(() => {
+        const current = editor.getNode(nodeId)
+        if (!current || current.type !== 'TEXT') return
+        if (
+          ('fontFamily' in changes && current.fontFamily !== changes.fontFamily) ||
+          ('fontWeight' in changes && current.fontWeight !== changes.fontWeight)
+        ) {
+          return
+        }
+
+        editor.updateNode(nodeId, changes)
+      })
+      .catch((e) => {
+        console.warn(`Failed to load font "${family}" (${style}):`, e)
+      })
+      .finally(() => {
+        pendingFontLoads.value = Math.max(0, pendingFontLoads.value - 1)
+      })
   }
 
-  async function setFamily(family: string) {
+  function setFamily(family: string) {
     if (!node.value) return
-    await doLoadFont(family, currentWeightLabel.value)
-    editor.updateNodeWithUndo(node.value.id, { fontFamily: family }, 'Change font')
+    const nodeId = node.value.id
+    const changes: Partial<SceneNode> = { fontFamily: family }
+    editor.updateNodeWithUndo(nodeId, changes, 'Change font')
+    loadFontInBackground(family, currentWeightLabel.value, nodeId, changes)
   }
 
-  async function setWeight(weight: number) {
+  function setWeight(weight: number) {
     if (!node.value) return
     const style = weightToStyle(weight)
-    await doLoadFont(node.value.fontFamily, style)
-    editor.updateNodeWithUndo(node.value.id, { fontWeight: weight }, 'Change font weight')
+    const nodeId = node.value.id
+    const family = node.value.fontFamily
+    const changes: Partial<SceneNode> = { fontWeight: weight }
+    editor.updateNodeWithUndo(nodeId, changes, 'Change font weight')
+    loadFontInBackground(family, style, nodeId, changes)
   }
 
   function setAlign(align: TextAlign) {
@@ -151,6 +185,7 @@ export function useTypography(options: UseTypographyOptions = {}) {
     weights: WEIGHTS,
     currentWeightLabel,
     activeFormatting,
+    isFontLoading,
     missingFonts,
     hasMissingFonts,
     setFamily,

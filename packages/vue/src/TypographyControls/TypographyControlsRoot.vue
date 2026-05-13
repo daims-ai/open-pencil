@@ -22,6 +22,7 @@ function onFormattingChange(val: AcceptableValue | AcceptableValue[]) {
   <slot
     :node="ctx.node"
     :weights="ctx.weights"
+    :is-font-loading="ctx.isFontLoading"
     :missing-fonts="ctx.missingFonts"
     :has-missing-fonts="ctx.hasMissingFonts"
     :active-formatting="ctx.activeFormatting"

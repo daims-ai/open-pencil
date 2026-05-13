@@ -1,6 +1,7 @@
 import {
   IS_FROM_DAIMS,
   IS_TAURI,
+  getLoadedFontData,
   loadFont as loadFontCore,
   markFontLoaded,
   styleToWeight,
@@ -66,6 +67,9 @@ export async function listFonts(): Promise<TauriFontFamily[]> {
 }
 
 export async function loadFont(family: string, style = 'Regular'): Promise<ArrayBuffer | null> {
+  const cached = getLoadedFontData(family, style)
+  if (cached) return cached
+
   if (IS_FROM_DAIMS) {
     const provider = getDaimsFontProvider()
     if (!provider) return null
@@ -73,12 +77,7 @@ export async function loadFont(family: string, style = 'Regular'): Promise<Array
     if (!buffer) return null
 
     markFontLoaded(family, style, buffer)
-
-    const weight = styleToWeight(style)
-    const italic = style.toLowerCase().includes('italic') ? 'italic' : 'normal'
-    const face = new FontFace(family, buffer, { weight: String(weight), style: italic })
-    await face.load()
-    document.fonts.add(face)
+    registerBrowserFontFace(family, style, buffer)
 
     return buffer
   }
@@ -90,12 +89,7 @@ export async function loadFont(family: string, style = 'Regular'): Promise<Array
       const buffer = new Uint8Array(data).buffer
 
       markFontLoaded(family, style, buffer)
-
-      const weight = styleToWeight(style)
-      const italic = style.toLowerCase().includes('italic') ? 'italic' : 'normal'
-      const face = new FontFace(family, buffer, { weight: String(weight), style: italic })
-      await face.load()
-      document.fonts.add(face)
+      registerBrowserFontFace(family, style, buffer)
 
       return buffer
     } catch {
@@ -104,4 +98,19 @@ export async function loadFont(family: string, style = 'Regular'): Promise<Array
   }
 
   return loadFontCore(family, style)
+}
+
+function registerBrowserFontFace(family: string, style: string, buffer: ArrayBuffer): void {
+  if (typeof document === 'undefined') return
+
+  const weight = styleToWeight(style)
+  const italic = style.toLowerCase().includes('italic') ? 'italic' : 'normal'
+  const face = new FontFace(family, buffer, { weight: String(weight), style: italic })
+
+  void face
+    .load()
+    .then(() => document.fonts.add(face))
+    .catch(() => {
+      console.warn(`Failed to load font "${family}" (${style})`)
+    })
 }
