@@ -5,6 +5,7 @@ import { IS_FROM_DAIMS, setDaimsFontProvider, setDaimsApiKey } from '@open-penci
 export interface OpenPencilConfig {
   providerID: string
   apiKey: string
+  modelID?: string
   daimsApiKey?: string
   prompt?: string
 }

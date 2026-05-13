@@ -152,6 +152,11 @@ async function initElectronConfig() {
     const config = await waitForExternalConfig()
     applyExternalConfig(config)
     setAPIKey(config.apiKey)
+
+    if (config.modelID) {
+      modelID.value = config.modelID
+    }
+
   } catch (e) {
     console.error('[use-chat] Failed to get external config:', e)
   }
