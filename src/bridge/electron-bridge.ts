@@ -23,11 +23,9 @@ interface LoadFilePayload {
 export interface DaimsAssetImage {
   id: number
   name: string
+  path?: string
   thumbnailUrl: string
-  width: number
-  height: number
   data?: number[]
-  tags: string[]
 }
 
 const externalConfig = ref<OpenPencilConfig | null>(null)
@@ -121,7 +119,8 @@ async function handlePlaceAssetImage(asset: DaimsAssetImage) {
     const store = getActiveEditorStore()
     const bytes = new Uint8Array(asset.data)
     const ext = asset.name.match(/\.(\w+)$/)?.[1] ?? 'png'
-    const file = new File([bytes], asset.name, { type: `image/${ext}` })
+    const mimeSubtype = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase()
+    const file = new File([bytes], asset.name, { type: `image/${mimeSubtype}` })
     const center = store.viewportScreenCenter()
     const { x: cx, y: cy } = store.screenToCanvas(center.x, center.y)
     await store.placeImageFiles([file], cx, cy)
@@ -131,7 +130,8 @@ async function handlePlaceAssetImage(asset: DaimsAssetImage) {
 }
 
 export function requestAssetImagePlace(assetId: number): void {
-  postMessageToParent('open-pencil:request-asset-image', { id: assetId })
+  const asset = daimsAssetImages.value.find((img) => img.id === assetId)
+  postMessageToParent('open-pencil:request-asset-image', { id: assetId, path: asset?.path })
 }
 
 export function waitForExternalConfig(): Promise<OpenPencilConfig> {
