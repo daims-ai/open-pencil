@@ -114,6 +114,7 @@ onUnmounted(() => {
       </SplitterResizeHandle>
       <SplitterPanel :default-size="18" :min-size="10" :max-size="30" class="flex flex-col">
         <div
+          v-if="!IS_FROM_DAIMS"
           class="flex shrink-0 items-center justify-between border-b border-border px-1.5 py-1.5"
         >
           <CollabPanel />
