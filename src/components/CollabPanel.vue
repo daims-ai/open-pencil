@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PopoverRoot, PopoverTrigger, PopoverPortal, PopoverContent } from 'reka-ui'
 
-import { colorToCSS } from '@open-pencil/core'
+import { colorToCSS, IS_FROM_DAIMS } from '@open-pencil/core'
 import Tip from '@/components/ui/Tip.vue'
 import { usePopoverUI } from '@/components/ui/popover'
 import { DEFAULT_COLLAB_STATE, useCollabInjected } from '@/composables/use-collab'
@@ -142,6 +142,7 @@ async function handleDone() {
     </button> -->
 
     <button
+      v-if="!IS_FROM_DAIMS"
       @click="handleDone"
       class="flex h-7 cursor-pointer items-center gap-1.5 rounded-md border-none px-3 text-xs font-medium transition-colors"
       :class="'bg-accent text-white hover:bg-accent/90'"

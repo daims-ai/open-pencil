@@ -59,6 +59,11 @@ function initPostMessageBridge() {
   window.addEventListener('message', (event: MessageEvent<OpenPencilMessage>) => {
     const { type, payload } = event.data
 
+    if (type === 'open-pencil:request-save-file') {
+      void handleRequestSaveFile()
+      return
+    }
+
     if (type === 'open-pencil:load-file') {
       void handleLoadFile(payload as LoadFilePayload)
       return
@@ -110,6 +115,15 @@ function initPostMessageBridge() {
     }
     configResolvers = []
   })
+}
+
+async function handleRequestSaveFile() {
+  const { getActiveEditorStore } = await import('@/stores/editor')
+  try {
+    await getActiveEditorStore().saveFigFile()
+  } catch (e) {
+    console.error('[electron-bridge] Failed to save .fig file:', e)
+  }
 }
 
 async function handlePlaceAssetImage(asset: DaimsAssetImage) {
